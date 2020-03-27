@@ -243,11 +243,14 @@ $speaker->setTwitter("@ezimuel");
 
 $em->persist($speaker); // prepare
 $em->flush(); // write
+
 // object id is now available
 printf ("Added Speaker with Id %d\n", $speaker->getId());
+
 // find by id
 $speaker = $em->find("Speaker", 1);
 printf("Speaker: %s\n", $speaker->getName());
+
 // find by parameters
 $company = "Zend Technologies";
 $speakers = $em->getRepository("Speaker")
@@ -256,6 +259,7 @@ printf("Speakers working for %s:\n", $company);
 foreach ($speakers as $speaker) {
     printf("%s with ID %d\n", $speaker->getName(), $speaker->getId());
 }
+
 // Update
 $speaker = $em->getRepository("Speaker")->findOneBy(["name" => "Enrico Zimuel"]);
 if (! $speaker) {
@@ -266,6 +270,7 @@ $speaker->SetName("Alberto Zimuel");
 $em->persist($speaker);
 $em->flush();
 printf("Updated Speaker with ID %d\n", $speaker->getId());
+
 // Remove
 $id = 1;
 $speaker = $em->find("Speaker", $id);
@@ -287,10 +292,12 @@ $em->require_once "bootstrap.php";
 
 $query = $em->createQuery(
     "select s from Speaker s where SIZE(s.talks) > 1"); // DQL
+
 // Whereas in standard SQL it would have been:
 //  SELECT s.* FROM speakers AS s 
 //  JOIN speakers_talks ON (s.id = speaker_id)
 //  GROUP BY s.id HAVING COUNT(s.id) > 1
+
 $speakers = $query->getResult();
 if (!speakers) {
     printf("No speaker has more than one talk.\n");
