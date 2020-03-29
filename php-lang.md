@@ -3,6 +3,25 @@ Best Practices (PHP-FIG PSRs)
 
 See [php-fig](https://www.php-fig.org/psr/psr-1/).
 
+System info
+===========
+
+* `phpinfo()` - returns a web page containing all infos about the php runnin in the system (version, config files, directories, etc)
+
+PHP Built in Web HTTP server
+============================
+
+* `php -S 0.0.0.0:8080` - opens a web server in the current directory (testing purposes only)
+  * `-t <path>` - to open it in another folder
+  * [See docs](https://www.php.net/manual/en/features.commandline.webserver.php)
+
+PHP interactive shell
+=====================
+
+* `php -a` - interactive shell
+* `php -r '<php-code>'` - run the php passed as a string
+* more options, see `man php`
+
 Opening tags
 ============
 
