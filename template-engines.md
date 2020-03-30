@@ -17,6 +17,7 @@ Here is an example with a main site layout, a blog layout and a blog article tem
 
 // template.php (site layout)
 ```php
+?>
 <html>
     <head>
         <title><?= $this->e($title) ?></title>
@@ -31,6 +32,7 @@ Here is an example with a main site layout, a blog layout and a blog article tem
 
 // blog.php  (blog-layout)
 ```php
+?>
 <?php $this->layout('template') ?>
 <h1>The Blog</h1>
 <section>
@@ -47,6 +49,7 @@ Here is an example with a main site layout, a blog layout and a blog article tem
 
 // blog-article.php (blog article template)
 ```php 
+?>
 <?php $this->layout('blog', ['title' => $article->title]) ?>
 <h2><?=$this->e($article->title)?></h2>
 <article>
