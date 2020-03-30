@@ -26,7 +26,7 @@ Opening tags
 ============
 
 * `<?php ... ?>`
-* `<?= ... ?>` (implicit echo) 
+* `<?= ... ?>` - short syntax, equals to `<?php echo ... ?>` 
 
 Comments
 ========
