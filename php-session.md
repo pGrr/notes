@@ -25,6 +25,7 @@ Sessions are a mechanism with which PHP preserves certain data across subsequent
   * creating a class extending `SessionHandlerInterface` 
   * calling `session_set_save_handler($handler, true);` - where `$handler` is the object of the created class
   * Then, calling `session_start()` and using `$_SESSION` as usual will use your custom functions instead of the default ones
+  * Sharing session data between different servers is required for all medium-big php apps, as they'll have a load balancer and will be served by different reduntant servers, there are basically two way to implement this: using a shared filesystem (not efficient, less secure) or using a database (more efficient, more secure), which is advised. In this case `SessionHandlerInterface` can be implemented by accessing and saving into the database, thus using `$_SESSION` will write into the db instead of into server's files.
 
 Basic functionning example (for security best-practices, see next sections):
 
