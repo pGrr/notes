@@ -169,3 +169,135 @@ A bunch of global variables are used by the web server to communicate HTTP reque
     * e.g. `header('Content-Length: ' . strlen($html))`
   * `$replace` - true (default) if the header will substitute an existing value, false otherwise
   * `$http_code` - 200 by default, but we can specify another HTTP-code
+
+
+# Authentication
+
+* Authentication ([See docs](https://www.php.net/manual/en/features.http-auth.php))
+  * HTTP Basic
+  * Digest
+
+## HTTP Basic Access Authentication
+
+* The client sends an HTTP request to the server
+* The server sends the HTTP header `WWW-Authenticate: Basic realm="<Realm>"`
+* The client is prompted for username and password
+* The client sends an HTTP request with the header `Authorization: Basic <auth-string>`
+  * where `<auth-string>` is computed with the following algorithm
+    * username and password are concatenated, separated by a colon: `<username>:<password>`
+    * the resulting string is encoded in octal
+    * the resulting octal code is encoded in Base64
+    * the resulting string is `<auth-string>`
+* PHP automatically decodes `<auth-string>` and make username and password directly accessible:
+  * `$_SERVER['PHP_AUTH_USER']` - username
+  * `$_SERVER['PHP_AUTH_PW']` - password
+* Security concerns: 
+  * The message is not encrypted by default! HTTPS is necessary!
+
+Basic example:
+
+```php
+$users = ['admin' => '12345678', 'guest' => 'guest'];
+$username = $_SERVER['PHP_AUTH_USER'] ?? false;
+  // check if the username and password are valid
+if (false === $username) {
+  require_auth();
+  exit;
+}
+if (!isset($users[$username]) || $users[$username] !== $_SERVER['PHP_AUTH_PW']) {
+  require_auth();
+  exit;
+}
+echo '<h1>User authenticated!</h1>';
+// Send a http-basic auth request
+function require_auth(): void
+{
+  header('WWW-Authenticate: Basic realm="My Realm"');
+  header($_SERVER["SERVER_PROTOCOL"] . ' 401 Unauthorized');
+  echo '<p>This page requires authentication!</p>';
+}
+```
+
+## HTTP Digest Access Authentication
+
+* Similar to HTTP-Basic authentication, but with a more complex and secure algorithm to encode username and password
+* Basic version:
+  * `auth_string = MD5(HA1:nonce:HA2)` - where:
+    * `HA1 = MD5(<username>:<realm>:<password>)` 
+    * `HA2 = MD5(<method>:<digestURI>)`
+    * `nonce` - is a pseudo-random value
+* Extended version: 
+  * a `qop` = quality of protection parameter is included, i.e. additional parameters are concatenated (e.g. the computed hash code MD5 of the message body, etc)
+* PHP doesn't automatically extracts the username and password, we must extract username and then check the password by computing the same digest:
+  * `$data = $_SERVER['PHP_AUTH_DIGEST']` 
+  * `$data['username']` - check the username
+  * We compute the valid digest using the same digest algorithm and the password we have for that user on the server
+  * if the user digest is equal to the computed valid digest, password is correct
+* Security concerns:
+  * MD5 has been de-classified as not-so secure recently, so HTTP-Digest is not considered enough secure, HTTPS MUST be used!
+
+```php
+$realm = 'Restricted area';
+
+//user => password
+$users = array('admin' => 'mypass', 'guest' => 'guest');
+
+if (empty($_SERVER['PHP_AUTH_DIGEST'])) {
+    header('HTTP/1.1 401 Unauthorized');
+    header('WWW-Authenticate: Digest realm="'.$realm.
+           '",qop="auth",nonce="'.uniqid().'",opaque="'.md5($realm).'"');
+
+    die('Text to send if user hits Cancel button');
+}
+// analyze the PHP_AUTH_DIGEST variable
+if (!($data = http_digest_parse($_SERVER['PHP_AUTH_DIGEST'])) ||
+    !isset($users[$data['username']]))
+    die('Wrong Credentials!');
+// generate the valid response
+$A1 = md5($data['username'] . ':' . $realm . ':' . $users[$data['username']]);
+$A2 = md5($_SERVER['REQUEST_METHOD'].':'.$data['uri']);
+$valid_response = md5($A1.':'.$data['nonce'].':'.$data['nc'].':'.$data['cnonce'].':'.$data['qop'].':'.$A2);
+// check the response
+if ($data['response'] != $valid_response)
+    die('Wrong Credentials!');
+// ok, valid username & password
+echo 'You are logged in as: ' . $data['username'];
+// function to parse the http auth header
+function http_digest_parse($txt)
+{
+    // protect against missing data
+    $needed_parts = array('nonce'=>1, 'nc'=>1, 'cnonce'=>1, 'qop'=>1, 'username'=>1, 'uri'=>1, 'response'=>1);
+    $data = array();
+    $keys = implode('|', array_keys($needed_parts));
+    preg_match_all('@(' . $keys . ')=(?:([\'"])([^\2]+?)\2|([^\s,]+))@', $txt, $matches, PREG_SET_ORDER);
+
+    foreach ($matches as $m) {
+        $data[$m[1]] = $m[3] ? $m[3] : $m[4];
+        unset($needed_parts[$m[1]]);
+    }
+    return $needed_parts ? false : $data;
+}
+```
+
+# Authorization
+
+* Authorization = control access to resources
+  * Oauth2
+  * RBAC - Role-Based Access Control
+
+## OAuth2
+
+* [See docs](https://www.php.net/manual/en/features.http-auth.php)
+* A framework to manage authorizations, now a standard, that enables:
+  * a third-party application
+  * to access a HTTP service in a limited way
+  * on behalf of the owner of the resource
+  * via an approval request between the user and the HTTP service
+  * or directly between the third-party application and the HTTP service
+* OAuth2 defines:
+  * Resource owner = user
+  * Resource server = API server
+  * Authorization server = can be the API server itself or not
+  * Client = third-party application
+
+...
