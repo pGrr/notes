@@ -3,7 +3,7 @@
 # Server requirements
 
 * The Laravel framework has a few system requirements
-  * All of these requirements are satisfied by the Laravel Homestead virtual machine ([see more](https://laravel.com/docs/7.x/homestead))
+  * All of these requirements are satisfied by the Laravel [Homestead]("0A_Homestead.md") virtual machine ([see more](https://laravel.com/docs/7.x/homestead))
   * Else, check all requirements are satisfied ([see more](https://laravel.com/docs/7.x#server-requirements))
 
 # Laravel Homestead VM
