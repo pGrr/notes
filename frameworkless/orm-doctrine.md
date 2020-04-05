@@ -14,17 +14,13 @@ __Cons__:
 * __Limitations on Complex Queries__ (some ORM layers have limitations, so sometimes you will find yourself writing raw SQL anyway)
 * __Learning curve for whatever goes beyond the basics__ (each ORM has it's own structure and way of working, so whenever you need to go beyond the basics, e.g. for tuning or for complex queries, you need to learn the inner workings)
 
-Doctrine
---------
+# Doctrine
+
+## Overview
 
 * [See docs](https://www.doctrine-project.org/)
 * Born by the influence of Java's Hibernate or Ruby's ActiveRecord
-* Easy install with composer:
-    ```json
-    "require": {
-        "doctrine/orm": "2.4.*"
-    }
-    ```
+* It implements the Data-Mapper pattern (similarly to Hibernate), as opposed to most of other ORMs, like Eloquent, which implement the ActiveDirectory pattern
 * DQL - Doctrine Query Language - is a SQL-like language that operates on the data model (objects) instead of tables
 * Doctrine takes care of the data model (OOP-to-SQL conversion):
   * the data model is created by Doctrine by processing our php classes (as opposed to creating the database in a standard way with SQL)
@@ -35,14 +31,81 @@ Doctrine
     * YAML
 * `vendor/bin/doctrine` - execute the conversion of the data model (actually creates the database)
 
-### Docblock
+## Install
+
+* Easy install with composer:
+  * `composer require doctrine/orm`
+  * Or, modify `composer.json`:
+    ```json
+    "require": {
+        "doctrine/orm": "*"
+    }
+    ```
+    * then `composer install`
+
+## Database configuration
+
+* Create the `cli-config.php` 
+    * Required to be in the root directory of the app
+    * Is automatically found and used by Doctrine to register the `EntityManager` configured with your db connection parameters in order for it to be used by the `php vendor/bin/doctrine` cli tool (See [obtaining an Entity Manager](https://www.doctrine-project.org/projects/doctrine-orm/en/2.7/reference/configuration.html#obtaining-an-entitymanager) and [setting up the command line tool](https://www.doctrine-project.org/projects/doctrine-orm/en/2.7/reference/configuration.html#setting-up-the-commandline-tool))
+    * The doctrine's `EntityManager`, configured with our db's connection parameters, will be used extensively by our app's code as it is the object to use in order to interact with the database, so it's better to use a separate file to create it
+      * `bootstrap.php` (as in Doctrine's docs), or better:
+      * In a separate class (or file), which will be then called from `cli-config.php`
+
+```php
+// cli-config.php (root folder)
+use Doctrine\ORM\Tools\Console\ConsoleRunner;
+// retrieve the Doctrine's Entity manager, configured for this app
+$entityManager = \myApp\EntityManager::getEntityManager();
+// register it in doctrine cli tool
+return ConsoleRunner::createHelperSet($entityManager);
+```
+
+```php
+// Custom class used to get the configured Entity Manager
+namespace myApp;
+class EntityManager
+{
+    // simple "default" Doctrine ORM configuration for Annotations
+    private static $isDevMode = true;
+    private static $proxyDir = null;
+    private static $cache = null;
+    private static $useSimpleAnnotationReader = false;
+    // db connection url string
+    private static $dbConnectionUrl = "mysql://homestead:secret@127.0.0.1:33060/buzz";
+    /**
+     * Returns the configured Doctrine's entity manager
+     */
+    public static function getEntityManager()
+    {
+        require_once "vendor/autoload.php";
+        $config = Doctrine\ORM\Tools\Setup::createAnnotationMetadataConfiguration(
+            array("src"),
+            self::$isDevMode,
+            self::$proxyDir,
+            self::$cache,
+            self::$useSimpleAnnotationReader);
+        // loads the connection configuration
+        $dbParams = array( "url" => self::$dbConnectionUrl);
+        // returns the configured Doctrine entity manager
+        return \Doctrine\ORM\EntityManager::create($dbParams, $config);
+    }
+}
+```
+
+## Basic mapping: table (=Entity) and columns
 
 * [See docs](https://www.doctrine-project.org/projects/doctrine-orm/en/2.7/reference/basic-mapping.html#basic-mapping)
-* `@Entity @Table(name="my_table_name")` - map class into a table
-* `@Id @GeneratedValue` - map the property into the table's ID and makes it auto-increment (so IDs will be automatically managed by Doctrine for the developer)
-* `@Column(type="...")` - map a property into a table column
-  * `@Column(type="...", nullable=true)` - make the column nullable
-* `@ManyToMany` - specifies a many to many relationship
+* `@Entity @Table(name="my_table_name")`
+  * map class into a table
+* `@Id @GeneratedValue`
+  * map the property into the table's ID and makes it auto-increment (so IDs will be automatically managed by Doctrine for the developer)
+* `@Column(type="...")`
+  * map a property into a table column
+  * `@Column(type="...", nullable=true)`
+    * make the column nullable
+* `@ManyToMany`
+  * specifies a many to many relationship
 
 ```php
 /** @Entity @Table(name="talks") */
@@ -64,42 +127,14 @@ class Talk
 }
 ```
 
-### Creating the database
-
-1. Create the files required for the Doctrine console interface to work:
-   1. `/bootstrap.php` file, with all info required by Doctrine's `EntityManager` (e.g. database used, source folder, etc)
-        ```php
-        // boostrap.php
-        use Doctrine\ORM\Tools\Setup;
-        use Doctrine\ORM\EntityManager;
-        require_once "vendor/autoload.php";
-        $isDevMode = true;
-        $config = Setup::createAnnotationMetadataConfiguration(
-            array(__DIR__."/src"),
-            $isDevMode);
-        $conn = array(
-            'driver' => 'pdo_sqlite',
-            'path'   => __DIR__ . '/db.sqlite',
-        );
-        return EntityManager::create($conn, $config);
-        ```
-   2. `cli-config.php` file, with the path to your bootstrap file:
-        ```php
-        // cli-config.php
-        use Doctrine\ORM\Tools\Console\ConsoleRunner;
-        return ConsoleRunner::createHelperSet(require "bootstrap.php");
-        ```
-    3. `/vendor/bin/doctrine` - now you can try doctrine's cli interface to see if it works (should display a help message)
-    4. `/vendor/bin/doctrine orm:schema-tool:create` - creates the database
-    5. `/vendor/bin/doctrine orm:schema-tool:update --force` - updates the database (after code changes)
-
-### Association mapping (join tables)
+## Association mapping (join tables)
 
 * [See docs](https://www.doctrine-project.org/projects/doctrine-orm/en/2.7/reference/association-mapping.html#association-mapping)
-
-### Docblock
-
 * `@ManyToMany`, `@OneToMany`, `@ManyToOne`, `@OneToOne`, etc
+* Each field of these type will be mapped to a Doctrine's collection ("to-many" relationship)
+* For each of them you need to:
+  * Initialize the field in the constructor using a `\Doctrine\Common\Collections\ArrayCollection`
+  * Write your own `add/remove` method that will take care of taking appropriate actions (e.g. reflecting the changes made in the referenced object as well)
 
 ```php
 /**
@@ -116,62 +151,9 @@ class Speaker
      */
     private $talks;
     // ...
-}
-/**
- * @Entity @Table(name="talks")
- */
-class Talk
-{
-    /**
-     * @ManyToMany(
-     * targetEntity="Speaker", 
-     * mappedBy="talks", 
-     * cascade={"persist","remove"})
-     */
-    private $speakers;
-    // ...
-}
-```
-
-### Initialization in constructor
-
-* `Doctrine\Common\Collections\ArrayCollection` - manages the collections of doctrine's objects
-
-```php
-/**
- * @Entity @Table(name="speakers")
- */
-class Speaker
-{
-    // ...
     public function __construct() {
         $this->talks = new \Doctrine\Common\Collections\ArrayCollection();
     }
-    // ...
-}
-/**
- * @Entity @Table(name="talks")
- */
-class Talk
-{
-    // ...
-    public function __construct() {
-        $this->speakers = new \Doctrine\Common\Collections\ArrayCollection();
-    }
-    // ...
-}
-```
-
-### Add / Remove methods
-
-* Methods to add / remove objects from doctrine's collections should be added
-
-```php
-/**
-* @Entity @Table(name="speakers")
-*/
-class Speaker
-{
     // ...
     public function addTalk(Talk $talk)
     {
@@ -191,11 +173,23 @@ class Speaker
     }
     // ...
 }
+
 /**
  * @Entity @Table(name="talks")
  */
 class Talk
 {
+    /**
+     * @ManyToMany(
+     * targetEntity="Speaker", 
+     * mappedBy="talks", 
+     * cascade={"persist","remove"})
+     */
+    private $speakers;
+    // ...
+    public function __construct() {
+        $this->speakers = new \Doctrine\Common\Collections\ArrayCollection();
+    }
     // ...
     public function addSpeaker(Speaker $speaker)
     {
@@ -205,7 +199,6 @@ class Talk
         $this->speakers->add($speaker);
         $speaker->addTalk($this);
     }
-
     public function removeSpeaker(Speaker $speaker)
     {
         if (! $this->speakers->contains($speaker)) {
@@ -218,18 +211,37 @@ class Talk
 }
 ```
 
+## Creating or updating the database
+
+* `vendor/bin/doctrine orm:schema-tool:create`
+  * creates the database
+* `vendor/bin/doctrine orm:schema-tool:update --force`
+  * updates the database (after code changes)
+
+## Writing changes to the Database
+
+* You need to get the configured instance of `EntityManager` via the method you implemented (see above)
 * Then you can write changes to the database with:
-  * `$em = require_once "bootstrap.php"` - create the entity manager
+  * `$em = require_once "bootstrap.php"`
+    * create the entity manager
   * Submit
-    * `$em->persist($obj)` - makes doctrine prepare the data to be written
-    * `$em->remove($obj)` - makes doctrine prepare the removal of the given object from the db
-    * `$em->flush()` - actually submits the changes to the database
-  * `$obj->getId()` - after the writing, doctrine can show the id of the written object in the db
+    * `$em->persist($obj)`
+      * makes doctrine prepare the data to be written
+    * `$em->remove($obj)`
+      * makes doctrine prepare the removal of the given object from the db
+    * `$em->flush()`
+      * actually submits the changes to the database
+  * `$obj->getId()`
+    * after the writing, doctrine can show the id of the written object in the db
   * Select
-    * `$em->find($entityName, $id)` - finds an object (db row) by its id
-    * `$em->getRepository($entityName)->...` - fetch the given entity
-      * `...->findBy($associativeArray)` - selects records from the given table using the given parameters
-      * `...->findOneBy($associativeArray)` - returns the first matching result
+    * `$em->find($entityName, $id)`
+      * finds an object (db row) by its id
+    * `$em->getRepository($entityName)->...`
+      * fetch the given entity
+      * `...->findBy($associativeArray)`
+        * selects records from the given table using the given parameters
+      * `...->findOneBy($associativeArray)`
+        * returns the first matching result
 
 ```php
 $em = require_once "bootstrap.php"; // EntityManager

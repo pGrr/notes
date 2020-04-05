@@ -15,7 +15,8 @@ Git (github.com)
 * `git status` - see current repository status (staging area)
 * Add/remove file from the staging area
   * `git add <file>` - add file to the staging area
-  * `git reset <file>` - remove file from the staging area
+  * `git reset <file>` - remove staged file from the staging area
+  * `git rm --cached <file>` - remove committed file from the tree and the staging area
 * `git commit -m "Commit comment"` - commit
   * each commit is identified by a 40-hex-chars unique hash code computed upon the commit informations using SHA1 algorithm 
 * `git log` - see commit history

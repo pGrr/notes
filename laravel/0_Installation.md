@@ -3,44 +3,40 @@
 # Server requirements
 
 * The Laravel framework has a few system requirements
-  * All of these requirements are satisfied by the Laravel [Homestead]("0A_Homestead.md") virtual machine ([see more](https://laravel.com/docs/7.x/homestead))
+  * All of these requirements are satisfied by the Laravel Homestead virtual machine ([see more](https://laravel.com/docs/7.x/homestead))
   * Else, check all requirements are satisfied ([see more](https://laravel.com/docs/7.x#server-requirements))
 
-# Laravel Homestead VM
+# Install
 
-* Laravel Homestead is an official, pre-packaged Vagrant box that provides all Laravel requirements ([see more](https://www.vagrantup.com/) about Vagrant)
-  * includes Nginx, PHP, MySQL, PostgreSQL, Redis, Memcached, Node, and all other Laravel requirements ([see all](https://laravel.com/docs/7.x/homestead#included-software))
-  * Requires VirtualBox (or VMWare) and Vagrant
-  * If you are using Windows, you may need to enable hardware virtualization (VT-x) 
-* Once VirtualBox / VMware and Vagrant have been installed:
-  * `vagrant box add laravel/homestead`
-  * Set the `provider` key in your `Homestead.yaml`
-    * e.g. `provider: virtualbox`
-  * The `folders` property of the `Homestead.yaml` file lists all of the folders you wish to share with your Homestead environment. They will be kept in sync between your local machine and the Homestead environment
-    * You can list there as many folder as you want (best practice is to include projects root folder, never use relative paths)
-    ```yaml
-    folders:
-    - map: ~/code/project1
-      to: /home/vagrant/project1
-    ```
-  * All vagrant options can be included:
-    * e.g. `type: "nfs"` to use NFS sync folders
-    * e.g.
-    ```yaml
-    folders:
-    - map: ~/code/project1
-      to: /home/vagrant/project1
-      type: "rsync"
-      options:
-          rsync__args: ["--verbose", "--archive", "--delete", "-zz"]
-          rsync__exclude: ["node_modules"]
-    ```
-  * The `sites` property allows you to easily map a "domain" to a folder on your Homestead environment. Again, you may add as many sites to your Homestead environment as necessary
-    ```yaml
-    sites:
-    - map: homestead.test
-      to: /home/vagrant/project1/public
-    ```
-    * If you change the sites property after provisioning the Homestead box, you should re-run `vagrant reload --provision` to update
-  * if you are experiencing issues while provisioning you should destroy and rebuild the machine via `vagrant destroy && vagrant up`
-  * if you install Homestead "per-project" you should check [automatic host resolution](https://laravel.com/docs/7.x/homestead#hostname-resolution)
+* Installing laravel installer globally
+  * `composer global require laravel/installer`
+    * `composer global about` - will tell you what is the directory that composer used for global installations
+  * `laravel new <project-root>` - will create a fresh Laravel installation in the directory you specify,with all of Laravel's dependencies already installed
+* Or else simply installing it locally with composer: 
+  * `composer create-project --prefer-dist laravel/laravel <project-root>`
+
+# Serve
+
+* `php artisan serve` - will start a development server at `http://localhost:8000` using the PHP built in server (if Homestead or other local environments solutions are not used)
+* For homestead-powered installations, see Homestead file
+
+# Configuration
+
+* configure your web server's document / web root to be the `public` directory. The `index.php` in this directory serves as the front controller for all HTTP requests. This must be the only folder that should be made public by the webserver!
+* `config` folder holds all configuration files. Each option is documented, so feel free to look through the files and get familiar with the options available to you.
+* Directories within the `storage` and the `bootstrap/cache` directories should be writable by your web server or Laravel will not run. If you are using the Homestead virtual machine, these permissions should already be set.
+* Set your application key to a random string: 
+  * If you installed Laravel via Composer or the Laravel installer, this key has already been set for you by the `php artisan key:generate` command
+  * Typically, this string should be 32 characters long. 
+  * The key can be set in the `.env` environment file. 
+  * If you have not copied the `.env.example` file to a new file named `.env`, you should do that now. 
+  * If the application key is not set, your user sessions and other encrypted data will not be secure!
+* Pretty URLs must be configured for Apache and Nginx if Homestead is not used ([see more](https://laravel.com/docs/7.x#pretty-urls))
+* You are now ready to go. 
+* For more configurations:
+  * Review the `config/app.php` file and its documentation. It contains several options such as timezone and locale that you may wish to change according to your application. You may also want to configure a few additional components of Laravel, such as: Cache, Database, Session, etc
+  * [See docs]() for more, such as: 
+    * Environment Configuration: Environment Variable Types, Retrieving Environment Configuration,Determining The Current Environment, Hiding Environment Variables From Debug Pages
+    * Accessing Configuration Values
+    * Configuration Caching
+    * Maintenance Mode
