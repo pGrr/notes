@@ -213,6 +213,10 @@ class Talk
 
 ## Creating or updating the database
 
+* `vendor/bin/doctrine`
+  * should output all the available commands
+* `vendor/bin/doctrine orm:validate-schema`
+  * validates the schema
 * `vendor/bin/doctrine orm:schema-tool:create`
   * creates the database
 * `vendor/bin/doctrine orm:schema-tool:update --force`

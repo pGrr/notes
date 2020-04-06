@@ -36,7 +36,9 @@ ALTER DATABASE dbNameYouWant CHARACTER SET utf8
 Host ‘%’ indicates any host.
 
 ```sql
+SELECT user, host FROM mysql.user; -- show users
 CREATE USER 'user'@'host' IDENTIFIED BY 'password'
+RENAME USER 'jeffrey'@'localhost' TO 'jeff'@'127.0.0.1'
 DROP USER 'user'@'host'
 ```
 
@@ -47,7 +49,10 @@ SET PASSWORD = OLD_PASSWORD('new_pass')
 ```
 
 ```sql
-GRANT ALL PRIVILEGES ON base.* TO 'user'@'localhost' IDENTIFIED BY 'password';
+SHOW GRANTS; -- show grants of current user
+SHOW GRANTS FOR 'user_name'@'host'; -- show grants of the user
+GRANT ALL PRIVILEGES ON base.* TO 'user'@'localhost' -- to existing user
+GRANT ALL PRIVILEGES ON base.* TO 'user'@'localhost' IDENTIFIED BY 'password'; -- create a user with all privileges on the fly
 GRANT SELECT, INSERT, DELETE ON base.* TO 'user'@'localhost' IDENTIFIED BY 'password';
 REVOKE ALL PRIVILEGES ON base.* FROM 'user'@'host'; -- one permission only
 REVOKE ALL PRIVILEGES, GRANT OPTION FROM 'user'@'host'; -- all permissions
