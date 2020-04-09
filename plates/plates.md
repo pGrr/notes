@@ -207,37 +207,6 @@ Here is an example with a main site layout, a blog layout and a blog article tem
 * But you can declare custom sections and re-use them in the same templates or in their layouts:
 
 ```php
-<?php $this->start('welcome') // declare a section ?>
-    <h1>Welcome!</h1>
-    <p>Hello <?=$this->e($name)?></p>
-<?php $this->stop() ?>
-
-<?php $this->push('scripts') // push = append to a section ?>
-    <script src="example.js"></script>
-<?php $this->end() ?>
-
-<?=$this->section('welcome') // access a section ?>
-
-<?=$this->section('sidebar', 
-        $this->fetch('default-sidebar') // default content?>
-
-<div id="sidebar">
-    <?php if ($this->section('sidebar')): // if conditions ?>
-        <?=$this->section('sidebar')?>
-    <?php else: ?>
-        <ul>
-            <li><a href="/link">Example Link</a></li>
-            <li><a href="/link">Example Link</a></li>
-            <li><a href="/link">Example Link</a></li>
-            <li><a href="/link">Example Link</a></li>
-            <li><a href="/link">Example Link</a></li>
-        </ul>
-    <?php endif ?>
-</div>
-
-/**
- * Complete example
- */ 
 //profile.php ("child" template)
 <?php $this->layout('template', ['title' => 'User Profile']) ?>
 
@@ -275,6 +244,12 @@ Here is an example with a main site layout, a blog layout and a blog article tem
         </div>
     </body>
 </html>
+```
+
+* In the example above, instead of using if-else for sidebar section, you could set the default fallback template directly:
+
+```php 
+<?=$this->section('sidebar', $this->fetch('default-sidebar') ?>
 ```
 
 # File extensions
@@ -332,7 +307,7 @@ $templates->loadExtension(new League\Plates\Extension\Asset('/path/to/public'));
 * Never use the for, while or switch control structures. Instead use if and foreach.
 * Avoid variable assignment.
 
-Example:
+Syntax example:
 
 ```php
 <?php $this->layout('template', ['title' => 'User Profile']) ?>
