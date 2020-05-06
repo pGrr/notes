@@ -57,18 +57,18 @@ $templates->addFolder('theme1', '/path/to/theme/1', true);
 /**
  * Render a template
  */
-$templates->render('home.php'); // file
-$this->templates->render('emails::welcome', [ // namespace::template
+echo $templates->render('home.php'); // file
+echo $this->templates->render('emails::welcome', [ // namespace::template
     'title' => 'Welcome',
     'name' => 'John',
     'message' => 'Welcome to Plates engine!',
 ]);
-$templates->render('partials/header'); // sub-directory of namespace
+echo $templates->render('partials/header'); // sub-directory of namespace
 $template = $templates->make('emails::welcome', [ // make, then render
     'name' => 'Jonathan'
 ]);
 $template->data(['name' => 'Jonathan']); // assign data in any moment
-$template->render();
+echo $template->render();
 echo $template; // using template's toString()
 ```
 
