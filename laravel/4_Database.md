@@ -52,6 +52,20 @@ $table->foreign('user_id')
     * in order to use this, for security, data passed in create method must also listed in the `$fillable`, which is an array containing the only columns name that can be mass-assigned (else someone would be able to other columns), or vice-versa you can use the `$guarded` to tell only the values which are not fillable (one or the other)
     * IMPORTANT: this will save the created instance into the database! If you want to just create the object you must use the standard syntax `new ...` and then, if you want, `save()` to persist it
 
+# Collections
+
+* `find()` will get a single model instance
+* `where()` and others will return collections.
+* Collections wraps collections of model instances and also provides many methods to filter the results:
+  * `first`, `last`, `where`, `with`, `flatten`, `collapse`, `map`, `flatmap`, `merge`, `filter`, `zip`, ...
+  * `with` will eager load data of a relationship
+    * `App\Article::with('tags')->get()` - will call the tags() relationship and filter the articles, preserving only the ones with tags
+  * Since all these methods return an Eloquent collection, you can chain all these methods
+    * `App\Article::with('tags')->get()->pluck('tags')->collapse()->pluck('name')` - gets all the tags associated with at least one article
+  * You can use "dot notation", similar to that used in views, e.g.
+    * `$articles->pluck('tags.*.name')->collapse()->unique()s` - same as above, but with dot notation
+* `collect($items)` - creates a collection from the given items (useful for interactive testing)
+
 # Eloquent relationships
 
 * You declare an eloquent relationship inside the model class, defining a method to get the objects of that relationship, which calls a "relationship-method" and returns its result

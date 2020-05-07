@@ -16,8 +16,17 @@
 ### Closure or controller
 
 ```php
-Route::get('/', function() {...}); // closure
-Route::get('/', 'WelcomeController@index'); // controller@method
+// closure
+Route::get('/', function() {...});
+// closure with type-hinted dependencies
+// (object $o will be created by Service container
+// through automatic resolution)
+Route::get('/', function(MyObject $o) {...});
+// controller@method
+// (any parameters needed by the specified function
+// will be resolved by the service container
+// through automatic resolution)
+Route::get('/', 'WelcomeController@index'); 
 ```
 
 ### Http-method specific
