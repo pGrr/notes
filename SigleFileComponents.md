@@ -59,6 +59,8 @@ Vue.component('BaseIcon', BaseIcon); // must be above "new Vue"
   * the content of `<slot>` tags will be the default value
   * if the parent puts any other content inside the child's tags, that will substitute the slot content
   * if the template code that replaces the slot content need to access the child's data, see __scoped-slots__
+  * multiple slots can be referenced by name
+  * multiple html elements can be put in the same slot by wrapping them in `<template>` tags (which won't be rendered in the final html)
 
 ```js
 // Form.vue
@@ -72,5 +74,18 @@ Vue.component('BaseIcon', BaseIcon); // must be above "new Vue"
     <div>
         <button><slot>DEFAULT</slot></button>
     </div>
+</template>
+
+
+// MediaBox.vue
+<slot name="heading"></slot>
+<slot name="paragraph"></slot>
+
+// Parent.vue
+<template>
+    <MediaBox>
+        <h2 slot="heading">Adam John</h2>
+        <p slot="paragraph">My words.</p>
+    </MediaBox>
 </template>
 ```
