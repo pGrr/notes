@@ -3,6 +3,7 @@
 * Async http library
 * based on promises
 * uses JSON by default (but can configured otherwise, [see docs](https://github.com/axios/axios#using-applicationx-www-form-urlencoded-format))
+* Axios is more user-friendly but it's totally replaceable with the native `fetch` API. Its advantages are mainly advanced features, such as __interceptors__, __onprogress__, etc. 
 
 # Install
 
