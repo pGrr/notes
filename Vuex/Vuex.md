@@ -32,3 +32,29 @@
   * if your app is simple, you will most likely be fine without Vuex. [A simple store pattern](https://vuejs.org/v2/guide/state-management.html#Simple-State-Management-from-Scratch) may be all you need
   * if you are building a medium-to-large-scale SPA, chances are you have run into situations that make you think about how to better handle state outside of your Vue components, and Vuex will be the natural next step for you.
     * _Flux libraries are like glasses: you’ll know when you need them_
+
+# Application structure
+
+* Vuex doesn't really restrict how you structure your code. Rather, it enforces a set of high-level principles:
+  * Application-level state is centralized in the store.
+  * The only way to mutate the state is by committing mutations, which are synchronous transactions.
+  * Asynchronous logic should be encapsulated in, and can be composed with actions.
+* As long as you follow these rules, it's up to you how to structure your project. If your store file gets too big, simply start splitting the actions, mutations and getters into separate files.
+* For any non-trivial app, we will likely need to leverage modules. Here's an example project structure:
+
+```text
+├── index.html
+├── main.js
+├── api
+│   └── ... # abstractions for making API requests
+├── components
+│   ├── App.vue
+│   └── ...
+└── store
+    ├── index.js          # where we assemble modules and export the store
+    ├── actions.js        # root actions
+    ├── mutations.js      # root mutations
+    └── modules
+        ├── cart.js       # cart module
+        └── products.js   # products module
+```
