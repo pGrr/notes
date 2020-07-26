@@ -4,16 +4,16 @@
 
 # Introduction
 
-* Vue is a progressive framework for building UIs and/or SPAs which is incrementally adoptable (thus has little size): the core is just the view, but you can plug-in a router, etc if you need them -[more](https://vuejs.org/v2/guide/index.html#What-is-Vue-js)
-* Provides two-way-data-binding (reactive automatic sync between the model (js code) and the view (html DOM)) by using the virtual DOM and declarative syntax - [more](https://vuejs.org/v2/guide/index.html#Declarative-Rendering)
-* Provides a way to express conditionals and loops - [more](https://vuejs.org/v2/guide/index.html#Conditionals-and-Loops)
-* Provides an easy way to update the UI in response to events (e.g. user input, etc) - [more](https://vuejs.org/v2/guide/index.html#Handling-User-Input)
-* Provides an easy way to realize re-usable custom html elements (components) - [more](https://vuejs.org/v2/guide/index.html#Relation-to-Custom-Elements)
-* Provides an easy way to organize components into an hierarchy tree and pass data (props = property of the component which is passed as argument) from the top to the bottom of the tree - [more](https://vuejs.org/v2/guide/index.html#Composing-with-Components) 
+* Vue is a progressive framework for building UIs and/or SPAs which is incrementally adoptable (thus has little size): the core is just the view, but you can plug-in a router, etc if you need them -[reference](https://vuejs.org/v2/guide/index.html#What-is-Vue-js)
+* Provides two-way-data-binding (reactive automatic sync between the model (js code) and the view (html DOM)) by using the virtual DOM and declarative syntax - [reference](https://vuejs.org/v2/guide/index.html#Declarative-Rendering)
+* Provides a way to express conditionals and loops - [reference](https://vuejs.org/v2/guide/index.html#Conditionals-and-Loops)
+* Provides an easy way to update the UI in response to events (e.g. user input, etc) - [reference](https://vuejs.org/v2/guide/index.html#Handling-User-Input)
+* Provides an easy way to realize re-usable custom html elements (components) - [reference](https://vuejs.org/v2/guide/index.html#Relation-to-Custom-Elements)
+* Provides an easy way to organize components into an hierarchy tree and pass data (props = property of the component which is passed as argument) from the top to the bottom of the tree - [reference](https://vuejs.org/v2/guide/index.html#Composing-with-Components) 
 
 # The Vue instance
 
-* The Vue instance is "the heart" of the application: it is the DOM element which Vue processes and uses to render the application. It is often referred as `vm` (view-model, though vue is not actually a MVVM pattern, it is heavily inspired by it) - [more](https://vuejs.org/v2/guide/instance.html#Creating-a-Vue-Instance)
+* The Vue instance is "the heart" of the application: it is the DOM element which Vue processes and uses to render the application. It is often referred as `vm` (view-model, though vue is not actually a MVVM pattern, it is heavily inspired by it) - [reference](https://vuejs.org/v2/guide/instance.html#Creating-a-Vue-Instance)
 * It takes an `optionsObject`, which most important parts are:
   * `el` - the selector of the DOM element to which the Vue instance should bind
   * `data` - the data bound to the view instance
@@ -340,4 +340,6 @@ eventBus.$emit('review-submitted', productReview)
 
 // the listener
 eventBus.$on('review-submitted', (productReview) => {
-    /
+    // ...
+});
+```
