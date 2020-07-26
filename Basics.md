@@ -10,16 +10,16 @@
   * on that element, any referenced `data` variable (e.g. `{{ product }}`, which references `app.data.product`) is changed reactively
 
 ```js
-//js
+// js
 var app = new Vue({
-    el: '#app',
+    el: '#app', 
     data: {
         product: 'Socks',
     }
 });
-// html
 ```
 ```html
+<!-- html -->
 <h1 id="app">{{ product }}</h1>
 ```
 
@@ -34,6 +34,7 @@ var app = new Vue({
 ```html
 <!-- normal syntax -->
 <img v-bind:src="image">
+
 <!-- shortcut syntax -->
 <img :src="image"> 
 ```
@@ -58,13 +59,12 @@ var app = new Vue({
 
 ## v-for 
 
-* When using v-for it is recommended to give each rendered element its own unique key, and thus helping vue to diffs the list in order to reuse and reorder existing elements
-
 ```html
 <!-- Loops over the elements variable (create multiple li) -->
 <ul>
     <li v-for="element in elements" :key="element.id"> {{ element.name }} </li>
 </ul>
+
 <!-- We can also use the index of the current element -->
 <ul>
     <li v-for="(element, index) in elements" :key="index"> 
@@ -72,6 +72,14 @@ var app = new Vue({
     </li>
 </ul>
 ```
+
+* When using v-for it is recommended to assign each rendered element its own unique key with 
+  * When Vue is updating a list of elements rendered with v-for, by default it uses an “in-place patch” strategy. If the order of the data items has changed, instead of moving the DOM elements to match the order of the items, Vue will patch each element in-place and make sure it reflects what should be rendered at that particular index
+  * This default mode is efficient, but only suitable when your list render output does not rely on child component state or temporary DOM state (e.g. form input values)
+  * To give Vue a hint so that it can track each node’s identity, and thus reuse and reorder existing elements, you need to provide a unique key attribute for each item
+  * It is recommended to provide a key attribute with v-for whenever possible, unless the iterated DOM content is simple, or you are intentionally relying on the default behavior for performance gains
+  * __Don’t use non-primitive values like objects and arrays as v-for keys. Use string or numeric values instead__
+
 
 ## v-on
 
