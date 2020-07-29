@@ -46,6 +46,25 @@ new Vue({
 ## ES2015 modules alternative syntax
 
 ```js
+import ComponentA from './ComponentA.vue'
+
+export default {
+  components: {
+    ComponentA // ComponentA: ComponentA
+  },
+  // ...
+}
+```
+
+## SINGLE-FILE-COMPONENTS REGISTRATION
+
+* You can register single file components by importing its file and then registering as seen above
+* You can import `.js` and `.vue` (single-file-components) files, and you can omit the file extension (or not). All of the following are interchangeble 
+  * `import ComponentA from './ComponentA.vue'` (single-file-component)
+  * `import ComponentA from './ComponentA.js'`
+  * `import ComponentA from './ComponentA'`
+
+```js
 import ComponentA from './ComponentA'
 import ComponentC from './ComponentC'
 
