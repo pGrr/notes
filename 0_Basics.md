@@ -168,16 +168,19 @@ docker start <CONTAINER> # or ID
 docker run -d -it --restart always ubuntu /bin/bash
 ```
 
-# DATA PERSISTENCE AND VOLUMES
+# DATA PERSISTENCE, VOLUMES AND FILESYSTEM MAPPING
 
 * When stopping a container by default its data is preserved, until removal
     * __STORAGE DRIVERS__ (temporary storage) - component that manages the local disk space used by each container (to layerize and mount images and their filesystems, which is a temporary non-persistent space, used only during the lifecycle of the container and then removed). There are several types of storage drivers, with performance differences, and its choice is based on host, not the containers.
     * `docker system info | grep Storage\ Driver`
-* __VOLUME__ (persistent storage) - volumes are persistent storage space decoupled from containers, which can be mounted in and used by a container. __It can be shared between the host and containers and will persist on container removal__.
+* __VOLUME__ (persistent storage) - volumes are persistent storage space decoupled from containers, which can be mounted in and used by a container. __It can be shared between different hosts, containers and third-party systems (e.g. cloud providers such as AWS, Azure, etc), and will persist on container removal__.
     1. Create a volume on a path of the host filesystem
     2. Create a container and mount that volume in a path of the container (or specify the mount path and the volume path in the container's image itself)
     3. The container path will refer to the host's volume and data inside that path will be in sync
     4. The same volume can be mounted on many containers and will persist on containers removal 
+* __BIND-MOUNTS__ (host-dependent path mapping)
+    * You can as well map a host filesystem path with a container path.
+    * The result is similar but __the volume approach should be preferred: The host directory is, by its nature, host-dependent so bind mounts rely on the host machine’s filesystem having a specific directory structure available whereas volumes are managed by docker inside its directories__. For this reason, you can’t mount a host directory from Dockerfile because built images should be portable. A host directory wouldn’t be available on all potential hosts. - [more](https://docs.docker.com/storage/bind-mounts/#:~:text=Bind%20mounts%20have%20limited%20functionality,is%20mounted%20into%20a%20container.&text=By%20contrast%2C%20when%20you%20use,Docker%20manages%20that%20directory's%20contents.)
 
 ```bash
 # VOLUMES
@@ -192,6 +195,14 @@ docker run -v <VOLUME>:<CNTPATH> <IMAGE>[ <COMMAND>]
 docker run -it -v myvolume:/test ubuntu /bin/bash
 # if the volume doesn't exist, it'll be created
 # if the container exist already, you can commit to a new image and then run -v that image
+# by default the container has read-write access, but you can make it read-only
+docker run -v <VOLUME>:<CNTPATH>:ro <IMAGE>[ <COMMAND>]
+
+# SAME AS ANOTHER CONTAINER
+docker run --volumes-from <CONTAINERB> <IMAGE>[ <COMMAND>]
+
+# BIND MOUNTS (host-dependent)
+docker run -it -v /host/path:/cnt/path ubuntu /bin/bash # abs path instead of volume name
 
 # LIST
 docker volume ls
