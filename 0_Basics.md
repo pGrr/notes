@@ -2,6 +2,7 @@
 
 * __Docker client__ is the cli application that we use to manage and interact with the docker engine (specifically, with the docker daemon). Receives our cli commands, translates them for the docker daemon and submits them to it. 
 * __Docker engine (Docker daemon + Containerd + Runc, ecc)__ - process that runs and manages containers, that receives the commands from the docker client and manages containers
+    * `docker system info`
 * __Images__
     * static (build-tyme) image of the container (containing all info about the container's user-space: filesystem + libraries, network/cpu/io configurations, ecc). Sort of a "static snapshot": alike to a Java class or a VM template, from which we can instantiate something)
     * An image is made of many read-only layers which are all used to compose the final image: image starts from a base layer, then every modification (defined in docker file commands) is saved into another layer (e.g. ubuntu + vim + update os + java) - `docker inspect <IMAGE>` ("Layers") 
@@ -27,6 +28,14 @@ docker # see all sub-commands
 docker [COMMAND] # see all sub-commands
 docker [COMMAND] --help # help
 docker run hello-world # check dockerhub connectivity
+```
+
+# SYSTEM INFO
+
+```bash
+# SYSTEM INFO
+docker system info 
+cat /etc/docker/daemon.json # daemon config file
 ```
 
 # IMAGE PULLING
@@ -146,10 +155,6 @@ docker stop <CONTAINER> # or ID
 docker start <CONTAINER> # or ID
 ```
 
-# DATA PERSISTENCE AND VOLUMES
-
-* When stopping a container its data is preserved, until removal
-
 # RESTART POLICIES
 
 * `NO` (default) - exited containers won't be restarted
@@ -161,4 +166,44 @@ docker start <CONTAINER> # or ID
 ```bash
 # RESTART POLICY --restart <POLICY>
 docker run -d -it --restart always ubuntu /bin/bash
+```
+
+# DATA PERSISTENCE AND VOLUMES
+
+* When stopping a container by default its data is preserved, until removal
+    * __STORAGE DRIVERS__ (temporary storage) - component that manages the local disk space used by each container (to layerize and mount images and their filesystems, which is a temporary non-persistent space, used only during the lifecycle of the container and then removed). There are several types of storage drivers, with performance differences, and its choice is based on host, not the containers.
+    * `docker system info | grep Storage\ Driver`
+* __VOLUME__ (persistent storage) - volumes are persistent storage space decoupled from containers, which can be mounted in and used by a container. __It can be shared between the host and containers and will persist on container removal__.
+    1. Create a volume on a path of the host filesystem
+    2. Create a container and mount that volume in a path of the container (or specify the mount path and the volume path in the container's image itself)
+    3. The container path will refer to the host's volume and data inside that path will be in sync
+    4. The same volume can be mounted on many containers and will persist on containers removal 
+
+```bash
+# VOLUMES
+docker volume
+docker volume --help
+
+# CREATE
+docker volume create <NAME>
+
+# ASSOCIATE VOLUME WITH CONTAINER
+docker run -v <VOLUME>:<CNTPATH> <IMAGE>[ <COMMAND>]
+docker run -it -v myvolume:/test ubuntu /bin/bash
+# if the volume doesn't exist, it'll be created
+# if the container exist already, you can commit to a new image and then run -v that image
+
+# LIST
+docker volume ls
+
+# INSPECT
+docker volume inspect <VOLUME>
+# locate volume path
+docker volume inspect <VOLUME> | grep Mountpoint 
+
+# REMOVE
+docker volume rm <VOLUME>
+
+# PRUNE
+docker volume prune
 ```
