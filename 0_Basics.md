@@ -218,3 +218,7 @@ docker volume rm <VOLUME>
 # PRUNE
 docker volume prune
 ```
+
+# DOCKERFILE
+
+* Dockerfiles are scripts that define and automate the steps to build a docker image
