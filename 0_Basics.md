@@ -219,6 +219,159 @@ docker volume rm <VOLUME>
 docker volume prune
 ```
 
+# COMMIT
+
+* __Commit is taking a snapshot of the current state of a container (file changes, settings, etc) and saving it as an image__
+    * __Generally, it is better to use Dockerfiles to manage your images in a documented and maintainable way__
+    * Anyway it can be useful to allow you to debug a container by running an interactive shell, or to export a working dataset to another server, etc
+    * This basically means if your "running" container are generating logs files, update packages, or making file changes, they will be saved into the image
+    * To put it in a different analogy `docker build` (i.e. building a dockerfile) is like `git clone`, while `docker commit` (committing) is like `git commit`
+* The commit operation will not include any data contained in volumes mounted inside the container.
+
+```bash
+docker commit --help
+
+# COMMIT
+docker commit <CONTAINER> [<REPOSITORY>[:<TAG>]]
+docker commit --message <MESSAGE> --author <AUTHOR> <CONTAINER> [<REPOSITORY>[:<TAG>]]
+```
+
 # DOCKERFILE
 
 * Dockerfiles are scripts that define and automate the steps to build a docker image
+    * allow to define and maintain images in a documentented and maintainable way
+    * allow non-authors to check what is inside an image (e.g. for security reasons), and/or customize it to suit their needs
+    * automate the steps to build an image, which are defined in a clear and transparent way thus avoiding "golden images" (un-maintainable images which are not reproduceable because you no longer know how they were built, not easily understandable by other team members, not easily upgradable, etc). For this reason dockerfile approach is better than the commit approach for most cases
+* It must be named `Dockerfile`
+* It contains dockerfile commands (`FROM`, `CMD`, `EXPOSE`, `ENV`, `RUN`, `ENTRYPOINT`, `COPY`, `ADD`, etc) combined with shell commands (e.g. bash)
+* It is built into an image by the docker daemon via the `docker build -f <DIRPATH>` command
+* [See docs](https://docs.docker.com/engine/reference/builder/)
+* [best practices](https://docs.docker.com/develop/develop-images/dockerfile_best-practices/)
+
+## DOCKERFILE COMMANDS
+
+* `FROM` - base image to use for inizialization (before any other change). It is optional, the image can also be built from scratch.
+* `LABEL` - key value pairs used as label (e.g. maintainer="Me")
+* `RUN` - execute commands inside the container (in a new layer and thus creating a new image. E.g., it is often used for installing software packages)
+* `COPY` - copy files from host filesystem into the container's 
+* `ADD` - same as copy, but also supports 2 other sources: URLs and you can extract a tar file from the source directly into the destination
+* `ENV` - define environment variables into the container
+* `CMD` or `COMMAND` - sets default command and/or parameters to be used on `docker run` unless otherwise specified (it can be easily overwritten from CLI).
+    * e.g. in `docker run -i -t ubuntu bash` the command is `bash`
+* `WORKDIR` - initial container's directory, in which CMD will be executed
+* `ENTRYPOINT` - configure the executable to be used on `docker run` (on which the command will be used): it will not be ignored when the user specifies a command on `docker run` and it is not easily changeable, specific options such as `--entrypoint` must be used.
+    * e.g. in `docker run -i -t ubuntu bash` the entrypoint `/bin/sh -c` (default), which is 
+* `USER` - sets the user name (or UID) and optionally the user group (or GID) to use when running the image and for any RUN, CMD and ENTRYPOINT instructions that follow it in the Dockerfile
+* `VOLUME` - binds a volume to a container's filesystem path (See volumes)
+* `EXPOSE` - sets the ports on which a container listens for connections (which can be overriden at runtime using the port mapping flag `docker run -p`)
+
+Other commands are available, [see docs](https://docs.docker.com/engine/reference/builder/).
+
+```dockerfile
+# Dockerfile example
+FROM ubuntu:latest
+LABEL maintainer="Me"
+VOLUME myVolume
+ENV MYHOME=/home/
+RUN apt-get update
+RUN apt-get -y install net-tools
+RUN apt-get -y install netcat
+ADD hello.sh /home/hello.sh
+ADD hello1.sh /home/hello1.sh
+RUN chmod 777 ${MYHOME}/hello.sh
+RUN chmod 777 ${MYHOME}/hello1.sh
+WORKDIR /home
+CMD ./hello.sh
+```
+```bash
+# BUILD example
+docker build -f <DIRPATH> # of a diretory containing a Dockerfile
+```
+
+```dockerfile
+# DOCKERFILE COMMANDS SYNTAX
+
+# FROM
+FROM [--platform=<platform>] <image> [AS <name>]
+FROM [--platform=<platform>] <image>[:<tag>] [AS <name>]
+FROM [--platform=<platform>] <image>[@<digest>] [AS <name>]
+
+# LABEL
+LABEL <key>=<value> <key>=<value> <key>=<value> ...
+LABEL maintainer="SvenDowideit@home.org.au"
+LABEL "com.example.vendor"="ACME Incorporated"
+LABEL com.example.label-with-value="foo"
+LABEL version="1.0"
+LABEL description="This text illustrates \
+that label-values can span multiple lines."
+LABEL multi.label1="value1" multi.label2="value2" other="value3"
+
+# RUN
+# SHELL FORM (default is /bin/sh -c on Linux and cmd /S /C on Windows)
+RUN <command>
+# EXEC FORM
+RUN ["executable", "param1", "param2"] (exec form)
+# Examples
+RUN ["/bin/bash", "-c", "echo hello"]
+RUN /bin/bash -c 'source $HOME/.bashrc; echo $HOME'
+RUN /bin/bash -c 'source $HOME/.bashrc; \
+echo $HOME'
+
+# ENTRYPOINT
+# EXEC FORM
+ENTRYPOINT ["executable", "param1", "param2"]
+# SHELL FORM
+ENTRYPOINT command param1 param2
+# Examples
+ENTRYPOINT ["top", "-b"]
+ENTRYPOINT ["/usr/sbin/apache2ctl", "-D", "FOREGROUND"]
+
+# CMD
+# EXEC FORM (best)
+CMD ["executable","param1","param2"]
+# DEFAULT EXEC FORM
+CMD ["param1","param2"]
+# SHELL FORM
+CMD command param1 param2
+# Examples
+CMD echo "This is a test." | wc -
+CMD ["/usr/bin/wc","--help"]
+
+# COPY
+COPY [--chown=<user>:<group>] <src>... <dest>
+COPY [--chown=<user>:<group>] ["<src>",... "<dest>"]
+COPY hom* /mydir/
+COPY hom?.txt /mydir/
+COPY test.txt relativeDir/
+COPY --chown=55:mygroup files* /somedir/
+
+# ADD
+ADD [--chown=<user>:<group>] <src>... <dest>
+ADD [--chown=<user>:<group>] ["<src>",... "<dest>"]
+# same syntax as COPY (see examples above)
+
+# ENV
+ENV <key> <value>
+ENV <key>=<value> ...
+ENV myName="John Doe" myDog=Rex\ The\ Dog \
+    myCat=fluffy
+ENV myName John Doe
+ENV myDog Rex The Dog
+ENV myCat fluffy
+
+# WORKDIR
+WORKDIR /path/to/workdir
+
+# USER
+USER <user>[:<group>]
+USER <UID>[:<GID>]
+USER patrick
+
+# VOLUME
+VOLUME ["/data"]
+VOLUME /myvol
+
+# EXPOSE
+EXPOSE <port> [<port>/<protocol>...]
+EXPOSE 80/udp
+```
