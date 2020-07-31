@@ -92,8 +92,16 @@ docker image rm <IMAGE>
 ```bash
 # LIST CONTAINERS
 docker ps # running
+docker container ls
 docker ps -a # all
+docker ps -a -f status=exited # filter exited
+docker ps -q # ids
 docker ps -a -f status=exited -q # ids of exited
+
+# OUTPUT FORMATTING
+docker ps --format '{{.Names}} container is using {{.Image}} image' # ps formatting
+docker ps --format 'table {{.Names}}\t{{.Image}}' # tabular
+docker ps -q | xargs docker inspect --format '{{.Id}} - {{.Name}} - {{.NetworkSettings.IPAddress}}' # inspect formatting
 
 # REMOVE
 docker rm <CONTAINER> # or ID
@@ -110,6 +118,7 @@ docker run --name="<NAME>" <IMAGE> # named
 docker container run -it ubuntu /bin/bash # interactive tty
 docker run -d <CONTAINER> <COMMAND> # background
 docker container run -d -it ubuntu /bin/bash # background
+docker run -d -p<PHOST:PCONTAINER> # tcp port-mapping
 docker run <IMAGE> sleep <SECONDS> # keep-alive
 docker run -it --name myubuntu ubuntu /usr/bin/find / -iname '*.sh' # command + arguments (bash-wise)
 
@@ -127,6 +136,7 @@ docker attach <CONTAINER> # same as above
 # SEE CONTAINER INFO
 docker top <CONTAINER> # processes
 docker stats <CONTAINER> # usage statistics
+docker ps -q | xargs docker stats # usage stats (all)
 docker container logs <CONTAINER> # logs
 
 # STOP EXECUTION
@@ -136,3 +146,19 @@ docker stop <CONTAINER> # or ID
 docker start <CONTAINER> # or ID
 ```
 
+# DATA PERSISTENCE AND VOLUMES
+
+* When stopping a container its data is preserved, until removal
+
+# RESTART POLICIES
+
+* `NO` (default) - exited containers won't be restarted
+* `ALWAYS` - always restart, unless the container was explicitally stopped. On docker daemon restart it will be started (even if stopped).
+* `UNLESS-STOPPED` - Same as above but on docker daemon restart these won't be started if stopped
+* `ON-FAILED` - restart only when exited with non-zero code (error). On docker daemon restart will be started if stopped
+* [more](https://docs.docker.com/engine/reference/run/#restart-policies---restart)
+
+```bash
+# RESTART POLICY --restart <POLICY>
+docker run -d -it --restart always ubuntu /bin/bash
+```
