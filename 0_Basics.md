@@ -5,7 +5,8 @@
     * `docker system info`
 * __Images__
     * static (build-tyme) image of the container (containing all info about the container's user-space: filesystem + libraries, network/cpu/io configurations, ecc). Sort of a "static snapshot": alike to a Java class or a VM template, from which we can instantiate something)
-    * An image is made of many read-only layers which are all used to compose the final image: image starts from a base layer, then every modification (defined in docker file commands) is saved into another layer (e.g. ubuntu + vim + update os + java) - `docker inspect <IMAGE>` ("Layers") 
+    * An image is made of many read-only layers which are all used to compose the final image: image starts from a base layer, then every modification (defined in docker file commands) is saved into another layer (e.g. ubuntu + vim + update os + java). This is used by docker to realize a cache mechanism: it'll cache layers and use them when appropriate, building only not yet cached layers each time, thus improving performance
+    * `docker inspect <IMAGE> | grep Layers`
 * __Container__ 
     * instance (run-time) of a container image (specific instance, alike to Java object or VM instance). It depends on its image: it's not possible to delete an image if a related container is still running
     * a container executes until there is a process executing, i.e. until the start application (or any of its derived processes) is running (when it is over, it stops)
@@ -127,9 +128,12 @@ docker run --name="<NAME>" <IMAGE> # named
 docker container run -it ubuntu /bin/bash # interactive tty
 docker run -d <CONTAINER> <COMMAND> # background
 docker container run -d -it ubuntu /bin/bash # background
-docker run -d -p<PHOST:PCONTAINER> # tcp port-mapping
 docker run <IMAGE> sleep <SECONDS> # keep-alive
 docker run -it --name myubuntu ubuntu /usr/bin/find / -iname '*.sh' # command + arguments (bash-wise)
+
+# RUN WITH PORT-MAPPING
+docker run -d -p<PHOST:PCONTAINER> # tcp port-mapping
+docker run -d --publish <PHOST:PCONTAINER> # tcp port-mapping
 
 # ATTACH TTY TO A RUNNING CONTAINER
 docker attach <CONTAINER> # or ID
@@ -245,27 +249,15 @@ docker commit --message <MESSAGE> --author <AUTHOR> <CONTAINER> [<REPOSITORY>[:<
 * It must be named `Dockerfile`
 * It contains dockerfile commands (`FROM`, `CMD`, `EXPOSE`, `ENV`, `RUN`, `ENTRYPOINT`, `COPY`, `ADD`, etc) combined with shell commands (e.g. bash)
 * It is built into an image by the docker daemon via the `docker build -f <DIRPATH>` command
+* Best practices:
+    * use `.dockerignore` file to exclude files from the building process
+    * use versioning to better organize versions of the dockerfile
+    * keep the images smallest as possible (install only what is necessary)
+    * one application for container (thus improving decoupling and maintainibility), then make containers communicate through network
+    * [more](https://docs.docker.com/develop/develop-images/dockerfile_best-practices/)
 * [See docs](https://docs.docker.com/engine/reference/builder/)
-* [best practices](https://docs.docker.com/develop/develop-images/dockerfile_best-practices/)
 
-## DOCKERFILE COMMANDS
-
-* `FROM` - base image to use for inizialization (before any other change). It is optional, the image can also be built from scratch.
-* `LABEL` - key value pairs used as label (e.g. maintainer="Me")
-* `RUN` - execute commands inside the container (in a new layer and thus creating a new image. E.g., it is often used for installing software packages)
-* `COPY` - copy files from host filesystem into the container's 
-* `ADD` - same as copy, but also supports 2 other sources: URLs and you can extract a tar file from the source directly into the destination
-* `ENV` - define environment variables into the container
-* `CMD` or `COMMAND` - sets default command and/or parameters to be used on `docker run` unless otherwise specified (it can be easily overwritten from CLI).
-    * e.g. in `docker run -i -t ubuntu bash` the command is `bash`
-* `WORKDIR` - initial container's directory, in which CMD will be executed
-* `ENTRYPOINT` - configure the executable to be used on `docker run` (on which the command will be used): it will not be ignored when the user specifies a command on `docker run` and it is not easily changeable, specific options such as `--entrypoint` must be used.
-    * e.g. in `docker run -i -t ubuntu bash` the entrypoint `/bin/sh -c` (default), which is 
-* `USER` - sets the user name (or UID) and optionally the user group (or GID) to use when running the image and for any RUN, CMD and ENTRYPOINT instructions that follow it in the Dockerfile
-* `VOLUME` - binds a volume to a container's filesystem path (See volumes)
-* `EXPOSE` - sets the ports on which a container listens for connections (which can be overriden at runtime using the port mapping flag `docker run -p`)
-
-Other commands are available, [see docs](https://docs.docker.com/engine/reference/builder/).
+Example:
 
 ```dockerfile
 # Dockerfile example
@@ -283,10 +275,44 @@ RUN chmod 777 ${MYHOME}/hello1.sh
 WORKDIR /home
 CMD ./hello.sh
 ```
+
 ```bash
 # BUILD example
 docker build -f <DIRPATH> # of a diretory containing a Dockerfile
 ```
+
+## Docker build
+
+```bash
+docker build --file <DOCKERFILE> --tag <REPOSITORY>:<TAG>
+docker build -f <DOCKERFILE> -t <REPOSITORY>:<TAG>
+docker build <DIRECTORY> # use Dockerfile inside the directory
+```
+
+## Dockerfile commands
+
+* `FROM` - base image to use for inizialization (before any other change)
+    * It is optional, the image can also be built from scratch but it is quite complex to do so: tools like DEBOOTSTRAP, YUMBOOSTRAP and RINSE are typically used to simplify this task
+    * Starting from a base image is simpler and quite common, and should be preferred when possible (dockerhub provides base images for most of situations) 
+* `LABEL` - key value pairs used as label (e.g. maintainer="Me")
+* `RUN` - execute commands inside the container (in a new layer and thus creating a new image. E.g., it is often used for installing software packages)
+* `COPY` - copy files from host filesystem into the container's 
+* `ADD` - same as copy, but also supports 2 other sources: URLs and you can extract a tar file from the source directly into the destination
+* `ENV` - define environment variables into the container
+* `CMD` or `COMMAND` - sets default command and/or parameters to be used on `docker run` unless otherwise specified (it can be easily overwritten from CLI).
+    * e.g. in `docker run -i -t ubuntu bash` the command is `bash`
+* `WORKDIR` - initial container's directory, in which CMD will be executed
+* `ENTRYPOINT` - configure the executable to be used on `docker run` (on which the command will be used)
+    * it will not be ignored when the user specifies a command on `docker run` and it is not easily changeable, specific options such as `--entrypoint` must be used.
+    * e.g. in `docker run -i -t ubuntu bash` the entrypoint `/bin/sh -c` (default)
+    * It can be used also as a default command to which provide arguments with `CMD` (or at runtime with `docker run <IMAGE> <COMMAND>`)
+* `USER` - sets the user name (or UID) and optionally the user group (or GID) to use when running the image and for any RUN, CMD and ENTRYPOINT instructions that follow it in the Dockerfile
+* `VOLUME` - binds a volume to a container's filesystem path (See volumes)
+* `EXPOSE` - sets the ports on which a container listens for connections (which can be overriden at runtime using the port mapping flag `docker run -p`)
+
+Other commands are available, [see docs](https://docs.docker.com/engine/reference/builder/).
+
+_Note: RUN, COPY and ADD create a new layer of the image: this is used by docker for a caching mechanism: it'll actually build only new layers, using the cached ones whenever possible (e.g. if we installed curl, for new containers it won't be necessary to install it again because docker will use the cached layer)_.
 
 ```dockerfile
 # DOCKERFILE COMMANDS SYNTAX
@@ -375,3 +401,76 @@ VOLUME /myvol
 EXPOSE <port> [<port>/<protocol>...]
 EXPOSE 80/udp
 ```
+
+# NETWORKING
+
+* __CNM - Container Network Model__ - the network management model used by docker, realized via __libnetwork__ library
+* [See docs](https://docs.docker.com/network/)
+
+## Single-host networking
+
+* Docker creates custom iptables-netfilter rules to realize custom virtual networks in order to provide different kind of connectivity for the host's containers
+* Each container sees its network as any other host (IP, gateway, routing table, DNS, ecc)
+* __Docker DNSs automatically resolves containers names (on the same network) to their IPs__, thus simplifying their management (`ping <CONTAINERNAME>` works if container is reachable). This is only available on custom networks, not the default bridge (in the default bridge the IP addresses must be used) - [more](https://docs.docker.com/config/containers/container-networking/#dns-services)
+* Docker provides 3 types of network drivers by default (unless configured otherwise):
+    * __BRIDGE__ (default)
+        * __It's like connecting some containers and the host to a switch, which provides LAN L2 connectivity between them__. Actually it is a software bridge, i.e. L2-Link-Layer device (in this case not hw but virtualized through sw) which forwards L2 traffic.
+        * __Containers are isolated from what's outside the bridge network__ (i.e. other not connected to that bridge network and the external world)
+        * __The external network is accessible only via the host__ (i.e. outside-ward connectivity is possible through host's NAT, inwards connectivity is possible only if a public port on the host is mapped via port-mapping on a container port (host-public-IP:PORT > host-natted-IP:PORT > port-mapping > container-IP:PORT)
+        * __Only applies to containers on the same Docker daemon host__
+        * [more](https://docs.docker.com/network/bridge/)
+    * __HOST__ 
+        * __Use the host network interface directly__: the container shares the host’s networking namespace (it does not get its own IP-address allocated), ports exposed by the container are exposed on the external network (security concerns)
+        * [more](https://docs.docker.com/network/host/)
+    * __NULL__
+        * __no connectivity, no IP, only loopback__
+        * [more](https://docs.docker.com/network/none/)
+* Using `docker network create` you can create custom networks, i.e. create a virtual network interface connected to the host with specific iptables-netfilter rules (thus with custom behaviour), using one of the custom network drivers provided by docker and customizing it with options.
+    * `--subnet` - subnet addresses (should be specified or conflicts between other host networks not managed by docker may arise)
+    * `--gateway` - network gateway address
+    * `--ip-masq` - ip masquerading (i.e. source ip address is changed when a packet exits the custom network, NAT-wise)
+    * `--icc` - enable/disable inter-container communication
+    * `--ip` - give a specific IP to the custom network (e.g. to bind the container to a specific physical network interface of the host, to simulate the direct usage of the physical interface e.g. to expose services on the external network (security concerns))
+        * docker default networks (e.g. bridge) have dynamic IP address, assigning them a fixed IP may result in conflicts (what if the chosen IP is occupied when docker starts?)
+    * An alternative equivalent syntax exists: `docker network create -o com."docker.network.bridge.host_binding_ipv4"="192...." my-network`
+    * [more](https://docs.docker.com/engine/reference/commandline/network_create/)
+
+```bash
+# NETWORK COMMANDS
+docker network --help
+
+# LIST DOCKER NETWORKS
+docker network ls
+
+# INSPECT NETWORK
+docker network inspect <NETWORK>
+
+# CONNECT CONTAINER TO A NETWORK
+docker network connect <NETWORK> <CONTAINER>
+docker run --network=<NETWORK> <IMAGE>[: <TAG>]
+
+# RUN CONTAINER WITH PORT-MAPPING
+docker run -d -p<PHOST:PCONTAINER> 
+docker run -d --publish <PHOST:PCONTAINER>
+
+# DISCONNECT CONTAINER FROM A NETWORK
+docker network disconnect <NETWORK> <CONTAINER>
+
+# CREATE NETWORK
+docker network create <NETWORK> # default driver is bridge
+docker network create --driver=bridge --subnet=192.168.0.0/16 br0
+docker network create -d overlay \
+  --subnet=192.168.10.0/25 \
+  --subnet=192.168.20.0/25 \
+  --gateway=192.168.10.100 \
+  --gateway=192.168.20.100 \
+  --aux-address="my-router=192.168.10.5" --aux-address="my-switch=192.168.10.6" \
+  --aux-address="my-printer=192.168.20.5" --aux-address="my-nas=192.168.20.6" \
+  my-multihost-network
+
+# REMOVE NETWORK
+docker network rm <NETWORK>
+```
+
+## Multi-host networking
+
