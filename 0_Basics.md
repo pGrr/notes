@@ -402,13 +402,10 @@ EXPOSE <port> [<port>/<protocol>...]
 EXPOSE 80/udp
 ```
 
-# NETWORKING
+# NETWORKING (single-host)
 
-* __CNM - Container Network Model__ - the network management model used by docker, realized via __libnetwork__ library
 * [See docs](https://docs.docker.com/network/)
-
-## Single-host networking
-
+* __CNM - Container Network Model__ - the network management model used by docker, realized via __libnetwork__ library
 * Docker creates custom iptables-netfilter rules to realize custom virtual networks in order to provide different kind of connectivity for the host's containers
 * Each container sees its network as any other host (IP, gateway, routing table, DNS, ecc)
 * __Docker DNSs automatically resolves containers names (on the same network) to their IPs__, thus simplifying their management (`ping <CONTAINERNAME>` works if container is reachable). This is only available on custom networks, not the default bridge (in the default bridge the IP addresses must be used) - [more](https://docs.docker.com/config/containers/container-networking/#dns-services)
@@ -472,10 +469,6 @@ docker network create -d overlay \
 docker network rm <NETWORK>
 ```
 
-## Multi-host networking
-
-TODO
-
 # DOCKER COMPOSE
 
 * Containers can communicate with each others through network interfaces. In microservice architectures having an application composed by multiple containers communicating with each other via network is the standard (e.g. orders database + clients database + production web server + development web server, each in its own container, all communicating with each other). Best practice is to have multiple containers, one for each micro-service
@@ -536,4 +529,3 @@ docker-compose up --scale <SERVICE>=<NUM> # scale
 docker-compose down
 docker-compose -f ~/path/docker-compose.yml stop
 ```
-
