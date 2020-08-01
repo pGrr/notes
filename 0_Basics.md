@@ -474,3 +474,66 @@ docker network rm <NETWORK>
 
 ## Multi-host networking
 
+TODO
+
+# DOCKER COMPOSE
+
+* Containers can communicate with each others through network interfaces. In microservice architectures having an application composed by multiple containers communicating with each other via network is the standard (e.g. orders database + clients database + production web server + development web server, each in its own container, all communicating with each other). Best practice is to have multiple containers, one for each micro-service
+* __Docker compose simplyfies the creation and management (starting, stopping, scaling of containers) of an application composed by multiple containers__ (similar to what the dockerfile does for image creation, but for containers orchestration) - [more](https://docs.docker.com/compose/)
+    * it is included in Windows and Mac version of Docker, but must be installed separately on linux - [more](https://docs.docker.com/compose/install/)
+* By default Compose sets up a single network for your app. Each container for a service joins the default network and is both reachable by other containers on that network, and discoverable by them at a hostname identical to the container name. - [more](https://docs.docker.com/compose/networking/)
+* When scaling a service in our application (i.e. replicating it into more containers), docker DNS will distribute requests between them performing a rudimental load balancing between "parallel" containers of the service (when performing port-mapping though only one host port can be mapped to a container, so you must specify a range e.g. `80-85:80`). Another option is to use a load balancer as service (e.g. nginx)
+
+## Docker compose file
+
+* `docker-compose.yml` YAML file defines the SERVICEs of the application and their configurations
+    * [See reference](https://docs.docker.com/compose/compose-file/)
+
+```yml
+# docker-compose.yml
+version: '3'
+services:
+  web:
+    build: .
+    dockerfile: Dockerfile
+    ports: 
+        - "8888:80" # HOSTPORT:CONTAINERPORT
+  redis:
+    image: redis
+```
+
+```bash
+#Dockerfile
+FROM python:3.7
+WORKDIR /app
+ADD requirements.txt /app/requirements.txt
+RUN pip install -r reqiorements.txt
+ADD app.py /app/app.py
+EXPOSE 80
+CMD ["python", "app.py"]
+```
+
+## Docker compose commands
+
+```bash
+docker-compose # help
+
+# VALIDATE DOCKER COMPOSE FILE
+docker-compose config
+
+# BUILD
+docker-compose build
+docker-compose -f ~/path/docker-compose.yml build
+
+# START SERVICES
+# (automatically builds if necessary)
+docker-compose up 
+docker-compose -f ~/path/docker-compose.yml up
+docker-compose up -d # daemon/detach (background)
+docker-compose up --scale <SERVICE>=<NUM> # scale
+
+# STOP SERVICES
+docker-compose down
+docker-compose -f ~/path/docker-compose.yml stop
+```
+
