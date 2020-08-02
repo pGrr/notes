@@ -710,6 +710,8 @@ docker stack ls
 
 # SEE SERVICES INFO
 docker stack services <STACK>
+# scale service
+docker service scale mystack_myservice=2
 
 # SEE CONTAINERS OF THE STACK
 docker stack ps <STACK>
