@@ -152,6 +152,9 @@ docker stats <CONTAINER> # usage statistics
 docker ps -q | xargs docker stats # usage stats (all)
 docker container logs <CONTAINER> # logs
 
+# SEE CONTAINER CHANGES IN RESPECT TO ITS ORIGINAL IMAGE
+docker container diff <CONTAINER>
+
 # STOP EXECUTION
 docker stop <CONTAINER> # or ID
 
@@ -719,3 +722,47 @@ docker stack ps <STACK>
 # REMOVE STACK
 docker stack rm <STACK>
 ```
+
+## Overlay networks (multi-host VXLAN L2 tunnelling)
+
+* The `overlay` network driver creates a distributed network among multiple Docker daemon hosts. This network sits on top of (overlays) the host-specific networks, allowing containers connected to it (including swarm service containers) to communicate securely when encryption is enabled through VXLAN L2 tunnelling. Docker transparently handles routing of each packet to and from the correct Docker daemon host and the correct destination container.
+  * Creates a VXLAN (encrypted L2 tunnelling), which means that containers inside that network will share a common private IP addressing space, like if they were on the same LAN (e.g. 10.0.0.0/24), thus they will be able to directly communicate with each other securely and directly
+  * This simulates having the containers on the same host, decoupling the real network infrastructure from the virtual network used by containers, defined by docker
+* [more](https://docs.docker.com/network/overlay/)
+
+```bash
+# CREATE OVERLAY NETWORK
+docker network create -d overlay <NETWORK>
+docker network ls # check
+docker stack deploy --compose-file=<FILE> <STACK> # test
+docker network inspect <NETWORK> # inspect
+```
+
+# DOCKER SECURITY BEST PRACTICES
+
+* In docker, we can't estabilish a container accessing hierarchy: who has root access to the host can execute any command inside the containers (this is a downside to containers in respect to VMs, where we can controll access permissions more accurately)
+  * we must be careful to who can access the docker host
+  * we must maintain other services outside of that host 
+* Images are not transparent and could execute any code: we should always use images defined by a dockerfile and check what it does, and possibly only use official ones (officially maintained by a trusted source)
+* Consider using read only flags
+  * Mount the container’s root filesystem as read only with `docker run ... --read-only` to limit the disk space writing of possible attackers (though some services need to write files/logs etc, so this must be considered separately for each case)
+  * Mount volumes using the `:ro` option to make them read-only (`docker run -v <VOLUME>:<CNTPATH>:ro <IMAGE>[ <COMMAND>]` (same considerations as above)
+* In any moment, we can check what changes has been made on a container in respect to its original image, with `docker container diff <CONTAINER>`
+* [Katacoda playgrounds about docker security](https://www.katacoda.com/courses/docker-security)
+
+## CIS & Docker Benchmark Security Tool
+
+* CIS (Center for Internet Security) has released a pdf containing all crytical security aspects about docker - [more](https://www.cisecurity.org/benchmark/docker/)
+* `docker benchmark security` is a tool (actually, a container that becomes part of our infrastructure) that executes automated tests regarding security checks on our infrastructure (checks config files, container runtimes, versions, security operations, etc). Info about Warnings resulting from the tests can be found on the pdf - [more](https://github.com/docker/docker-bench-security)
+
+## Quay
+
+* Quay is a registry, similar to dockerhub, which additionally performs security checks on every pushing/building of an image
+
+# BEST PRACTICES
+
+1. Isolation = one service only for each container
+2. Images should contain only what is strictly necessary for the service to accomplish its tasks (thus images should be minimal, as small as possible)
+3. Always secure the host root access (who has root access to the host can execute any command inside the containers, containers doesn't provide any access control mechanisms)
+4. Always use last softwares available, for security patches (update docker and container's libraries). Consider using enterprise version instead of community version for additional security features and professional support for crytical projects
+
