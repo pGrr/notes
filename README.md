@@ -469,7 +469,7 @@ docker network create -d overlay \
 docker network rm <NETWORK>
 ```
 
-# DOCKER COMPOSE
+# DOCKER COMPOSE (Single-host-service container orchestration)
 
 * Containers can communicate with each others through network interfaces. In microservice architectures having an application composed by multiple containers communicating with each other via network is the standard (e.g. orders database + clients database + production web server + development web server, each in its own container, all communicating with each other). Best practice is to have multiple containers, one for each micro-service
 * __Docker compose simplyfies the creation and management (starting, stopping, scaling of containers) of an application composed by multiple containers__ (similar to what the dockerfile does for image creation, but for containers orchestration) - [more](https://docs.docker.com/compose/)
@@ -528,4 +528,192 @@ docker-compose up --scale <SERVICE>=<NUM> # scale
 # STOP SERVICES
 docker-compose down
 docker-compose -f ~/path/docker-compose.yml stop
+```
+
+# DOCKER SWARM (multi-host service container orchestration)
+
+* Docker swarm simplyfies the creation, scaling and management of services scaled in a multi-host cluster in a declarative way:
+    * it lets you declare hosts (running docker swarm and labelled as manager or workers), services (and their desired characteristics e.g. number of replicas, network and storage resources, ports exposed to the outside world, etc)
+    * it takes care of the low-level management details of container orchestration to realize the service you've declared (in a similar way to what docker-compose does for single-host services)
+        * it lets you change the configuration of a service at run-time without restarting it thanks to the multi-host replication
+* [more](https://docs.docker.com/engine/swarm/key-concepts/)
+
+## Docker swarm entities
+
+* __STACK__ = group of services (containers) which work together to realize an application (alike to a docker-compose stack)
+* __TASK__ = instance of a service (container) running in a node
+* __NODES__ = instances of the Docker engine participating in the swarm ("hosts": physical computer with a single OS, VMs, cloud environments, etc)
+    * __WORKERS__ = receive and execute tasks dispatched from manager nodes
+    * __MANAGERS__ = perform the orchestration and cluster management required to maintain the desired state of the swarm. In a production environment, at least 5 managers are advised (they will elect a single leader to conduct orchestration tasks), but for simple applications a single manager may be enough 
+        * receives the service definition (alike to docker-compose: number of replicas, network and storage resources, ports exposed to the outside world, etc)
+        * contains a registry service, which is queried by workers to get the images for container instantiation
+        * create, manage and dispatch tasks to the worker nodes
+        * receive requests from the client and distribute them to the worker nodes (load-balancing)
+            * The load balancing performed is basic and not much configurable: for more complex load-balancing Kubernetes is better
+        * A manager is by default also a worker, but you can make it manager only
+    * Managers and workers need to be able to communicate via network - [more](https://docs.docker.com/engine/swarm/swarm-tutorial/#the-ip-address-of-the-manager-machine)
+
+## Docker swarm commands
+
+[See tutorial](https://docs.docker.com/engine/swarm/swarm-tutorial/)
+
+```bash
+# MANAGER INITIAZATION (on MANAGER)
+docker swarm init --advertise-addr <IP> # IP towards workers (internal)
+# will output the command to be launched on a worker to join him to this swarm
+# (comprehensive of a token for secure auth)
+
+# WORKER INITIALIZATION (on WORKER)
+# use the command given as output on manager initialization, which has the form:
+docker swarm join --token <TOKEN> <IP:PORT>
+
+# SWARM STATUS INFO (on MANAGER)
+docker swarm info
+
+# LIST NODES (on MANAGER)
+docker node ls
+
+# MANAGER LEAVING (on MANAGER)
+docker swarm leave --force
+
+# DEPLOY SERVICE (on MANAGER)
+docker service create --replicas <N> --name <NAME> <IMAGE> [<COMMAND>]
+docker service create --replicas 1 --name helloworld alpine ping docker.com
+
+# LIST SERVICES (on MANAGER)
+docker service ls
+
+# INSPECT SERVICE (on MANAGER)
+docker service inspect --pretty <SERVICE>
+
+# SEE WHAT NODES ARE RUNNING A SERVICE (in this moment, it can change)
+docker service ps <SERVICE>
+
+# SEE SERVICES RUNNING IN A NODE (on any NODE)
+docker ps
+
+# SCALE SERVICE (on MANAGER)
+docker service scale <SERVICE>=<NUMBER-OF-TASKS>
+
+# REMOVE SERVICE (on MANAGER)
+docker service rm <SERVICE>
+
+# UPDATE (on MANAGER)
+docker service create \
+  --replicas 3 \
+  --name redis \
+  --update-delay 10s \ # automatic rolling updates
+  redis:3.0.6
+# if your update failed, then the update status of the service is "paused"
+docker service inspect --pretty <SERVICE>
+# if it's paused, you can restart it with:
+docker service update --image redis:3.0.7 redis
+redis
+# then check the rolling update
+docker service inspect --pretty <SERVICE>
+docker service ps <SERVICE-ID>
+```
+
+## Set node availability to Drain
+
+* "Drain" status = do not receive tasks, stop running tasks. The manager launches replicas on other active nodes to replace the stopping ones. (only applies to swarm related containers)
+
+```bash
+# SET NODE AVAILABILITY TO DRAIN (on MANAGER)
+docker node update --availability drain <WORKER>
+docker node ls # Availability = Drain
+docker node inspect --pretty <WORKER> # Status.Availability = Drain
+docker service ps redis # check the updated task assignments
+
+# REVERT NODE AVAILABILITY TO ACTIVE (on MANAGER)
+docker node update --availability active <NODE-ID>
+docker node ls # Availability = Active
+docker node inspect --pretty <WORKER> # Status.Availability = Drain
+docker service ps redis # check the updated task assignments
+```
+
+## Routing mesh
+
+![](img/routing-mesh.png)
+
+* Routing mesh is a functionality of docker swarm that simplifies the routing and load balancing of incoming requests.
+* With routing mesh, each node will have a load balancer, so the request can now be received by any node indifferently
+* Each node in the swarm will accept  connections on published ports for any service of the swarm, even if there’s no task running on that node, taking care of routing it to available nodes that have the corresponding active task
+* You can configure routing mesh in many different ways: set up TCP-only, UDP-only or TCP+UDP connections, configure an external load balancer, and/or bypass the routing mesh, etc
+* [more](https://docs.docker.com/engine/swarm/ingress/)
+
+``` bash
+# On service creation
+docker service create \ 
+  --name <SERVICE-NAME> \
+  --publish published=<PUBLISHED-PORT>,target=<CONTAINER-PORT> \
+  <IMAGE>
+# On existing service
+docker service update \
+  --publish-add published=<PUBLISHED-PORT>,target=<CONTAINER-PORT> \
+  <SERVICE>
+# Inspect
+docker service inspect --format="{{json .Endpoint.Spec.Ports}}" my-web
+```
+
+## Deploy docker swarm stacks (docker-compose deploy + docker stack)
+
+* It is an extension of docker-compose, which adds the `deploy` section to the docker-compose.yml file to define swarm-related configurations (needs docker-compose and docker-swarm installed)
+    * [deploy section reference](https://docs.docker.com/compose/compose-file/#deploy)
+* [more](https://docs.docker.com/engine/swarm/stack-deploy/)
+
+```yml
+# docker-compose.yml
+version: "3"
+services:
+  cluster1:
+    image: nginx
+    ports:
+      - "8080:80"
+    deploy: # service swarm settings
+      replicas: 6
+      restart_policy:
+        condition: on-failure
+      placement:
+        constraints:
+           - node.role == worker
+  cluster2:
+    image: redis
+    ports:
+      - "8081:80"
+    deploy: # service swarm settings
+      replicas: 6
+      restart_policy:
+        condition: on-failure
+      placement:
+        constraints:
+           - node.role == worker
+  cluster3: 
+    image: httpd
+    ports:
+      - "8082:80"
+    deploy: # service swarm settings
+      replicas: 6
+      restart_policy:
+        condition: on-failure
+      # no placement = on any node
+```
+
+```bash
+# DEPLOY STACK (on MANAGER)
+docker stack deploy \
+    --compose-file=docker-compose.yml \
+    <STACK>
+
+# LIST STACKS
+docker stack ls
+
+# SEE SERVICES INFO
+docker stack services <STACK>
+
+# SEE CONTAINERS OF THE STACK
+docker stack ps <STACK>
+
+# REMOVE STACK
+docker stack rm <STACK>
 ```
