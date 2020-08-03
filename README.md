@@ -12,16 +12,31 @@
 
 The options object is the most important API of Vue:
 
-* `el` - Provide the Vue instance an existing DOM element to mount on. It can be a CSS selector string or an actual HTMLElement
-* `template` - A string template to be used as the markup for the Vue instance. The template will replace the mounted element. In the template, you can use Vue's template syntax.
+* `el` - Provide the Vue instance an existing DOM element to mount on.
+    * It can be a CSS selector string or an actual HTMLElement
+* `template` - A string template to be used as the markup for the Vue instance. The template will replace the mounted element. 
+    * In the template, you can use Vue's template syntax.
     * `render` can be used instead of template, to define it with js (or even jsx, react-wise)
-* `components` - A hash of components to be made available to the Vue instance (usable in the template).
-* `data` - The data object for the Vue instance. Vue will recursively convert its properties into getter/setters to make it “reactive”
-* `props` - A list/hash of attributes that are exposed to accept data from the parent component. It has an Array-based simple syntax and an alternative Object-based syntax that allows advanced configurations such as type checking, custom validation and default values
+* `components` - A hash of components to be made available to the Vue instance
+    * components can be used in the template (or directly in the html bound with the vue instance)
+* `data` - The data object for the Vue instance.
+    * Vue will recursively convert its properties into getter/setters to make it “reactive”
+    * variables inside data can be used in the template (or directly in the html bound with the vue instance)
+* `props` - A list/hash of attributes that are exposed to accept data from the parent component.
+    * It has an Array-based simple syntax and an alternative Object-based syntax that allows advanced configurations such as type checking, custom validation and default values
+    * props values will be passed as html properties of the custom element
     * `propsData` can be used only on the root Vue instance (`new Vue(...)`) and will pass the given values as props, instead of passing them via the template (for simplifying testing)
-* `methods` - Methods to be mixed into the Vue instance. You can access these methods directly on the VM instance, or use them in directive expressions. All methods will have their this context automatically bound to the Vue instance. __You should not use an arrow function to define a method__ (or this won't be the Vue instance, it will be undefined) 
-* `computed` - Computed properties to be mixed into the Vue instance. All getters and setters have their this context automatically bound to the Vue instance. Computed properties are cached, and only re-computed on reactive dependency changes. Note that __if you use an arrow function with a computed property, this won’t be the component’s instance, but you can still access the instance as the function’s first argument__.
-* `watch` - An object where keys are expressions to watch and values are the corresponding callbacks. The value can also be a string of a method name, or an Object that contains additional options. The Vue instance will call `$watch()` for each entry in the object at instantiation. __You should not use an arrow function to define a method__ (or this won't be the Vue instance, it will be undefined)
+* `methods` - Methods to be mixed into the Vue instance.
+    * You can access these methods directly on the VM instance, or use them in directive expressions. 
+    * All methods will have their this context automatically bound to the Vue instance. __You should not use an arrow function to define a method__ (or this won't be the Vue instance, it will be undefined) 
+* `computed` - Computed properties to be mixed into the Vue instance.
+    * Computed properties are cached, and only re-computed on reactive dependency changes (unlike methods, [see more](https://vuejs.org/v2/guide/computed.html#Computed-Caching-vs-Methods)). 
+    * For some tasks, e.g. async fetching, watch is more appropriate ([see more](https://vuejs.org/v2/guide/computed.html#Computed-vs-Watched-Property)). 
+    * All getters and setters have their this context automatically bound to the Vue instance. __If you use an arrow function with a computed property, this won’t be the component’s instance, but you can still access the instance as the function’s first argument__.
+* `watch` - An object where keys are expressions to watch and values are the corresponding callbacks.
+    * The value can also be a string of a method name, or an Object that contains additional options. The Vue instance will call `$watch()` for each entry in the object at instantiation.
+    * Computed properties should be preferred when you have some data that needs to change based on some other data - [more](https://vuejs.org/v2/guide/computed.html#Computed-vs-Watched-Property)
+    * __You should not use an arrow function to define a method__ (or this won't be the Vue instance, it will be undefined)
 * [Lifecycle hooks](https://vuejs.org/v2/api/#Options-Lifecycle-Hooks) provide a way to define callbacks to be executed on certain moments in the instance's lifecycle
 * [See reference](https://vuejs.org/v2/api/) for advanded options such as
     * [`directives`, `filters`](https://vuejs.org/v2/api/#Options-Assets)
@@ -40,7 +55,12 @@ var vm = new Vue({
     el: '#app', // actual html element that will be replaced by template
     template: `
       <div>
-        <span>a is {{ a }}. Prop1 is {{ prop1 }}, Prop2 is {{ prop2 }}.</span>
+        <span>
+            a is {{ a }}, b is {{ b }}. 
+            Prop1 is {{ prop1 }}, 
+            Prop2 is {{ prop2 }}.
+            aDouble is {{ aDouble }}
+        </span>
         <component-a></component-a>
       </div>
     `,
@@ -49,6 +69,7 @@ var vm = new Vue({
     },
     data: { // instance inner variables
         a: 1,
+        b: 2,
     },
     props: { // variables passed as arguments
         // a hash with type checking:
@@ -68,8 +89,22 @@ var vm = new Vue({
             this.a++
         }
     },
-    computed: {
-        aDouble: vm => vm.a * 2
+    computed: { // The function will be used as the getter of the property
+        // arrow function: 
+        // fist parameter is the vue instance
+        aDouble: vm => vm.a * 2,
+        bDouble: {
+            // not arrow-function:
+            // "this" is the Vue instance
+            get: function() {
+                return this.b * 2;
+            },
+            // you can define setters:
+            // (on bDouble set, update b)
+            set: function(newValue) {
+                this.b = newValue / 2;
+            }
+        }
     },
     watch: {
         a: function (val, oldVal) {
@@ -84,7 +119,7 @@ var vm = new Vue({
 
 ```js
 // In js code you can access the instance
-// properties and methods with the "$" prefix, like this:
+// properties and methods with the "$" prefix (to differentiate them from user-defined ones), like this:
 vm.$el
 vm.$data
 vm.$props
@@ -108,6 +143,9 @@ vm.$options
 
 <!-- HTML RENDERING -->
 <span v-html="myHTMLData"></span>
+
+<!-- IMMUTABILITY (v-once) -->
+<span v-once>This will never change: {{ msg }}</span>
 
 <!-- ONE-WAY DATA BINDING (v-bind) -->
 <span v-bind:class="myClass"></span>
