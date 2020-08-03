@@ -92,7 +92,9 @@ vm.$options
 // ...etc
 ```
 
-# TEMPLATE SYNTAX
+# TEMPLATE SYNTAX API
+
+* This is Vue's own syntax, usable inside a template's definition or directly inside a Vue instance (the root vue instance or any vue component)
 
 ```html
 <!-- INTERPOLATION -->
@@ -190,5 +192,5 @@ vm.$options
 <!-- DYNAMIC COMPONENTS -->
 <!-- Component changes when currentTabComponent changes -->
 <component v-bind:is="currentTabComponent"></component>
-
 ```
+
