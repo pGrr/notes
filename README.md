@@ -10,6 +10,25 @@
 
 # VUE INSTANCE AND OPTIONS API
 
+The options object is the most important API of Vue:
+
+* `el` - Provide the Vue instance an existing DOM element to mount on. It can be a CSS selector string or an actual HTMLElement
+* `template` - A string template to be used as the markup for the Vue instance. The template will replace the mounted element. In the template, you can use Vue's template syntax.
+    * `render` can be used instead of template, to define it with js (or even jsx, react-wise)
+* `components` - A hash of components to be made available to the Vue instance (usable in the template).
+* `data` - The data object for the Vue instance. Vue will recursively convert its properties into getter/setters to make it “reactive”
+* `props` - A list/hash of attributes that are exposed to accept data from the parent component. It has an Array-based simple syntax and an alternative Object-based syntax that allows advanced configurations such as type checking, custom validation and default values
+    * `propsData` can be used only on the root Vue instance (`new Vue(...)`) and will pass the given values as props, instead of passing them via the template (for simplifying testing)
+* `methods` - Methods to be mixed into the Vue instance. You can access these methods directly on the VM instance, or use them in directive expressions. All methods will have their this context automatically bound to the Vue instance. __You should not use an arrow function to define a method__ (or this won't be the Vue instance, it will be undefined) 
+* `computed` - Computed properties to be mixed into the Vue instance. All getters and setters have their this context automatically bound to the Vue instance. Computed properties are cached, and only re-computed on reactive dependency changes. Note that __if you use an arrow function with a computed property, this won’t be the component’s instance, but you can still access the instance as the function’s first argument__.
+* `watch` - An object where keys are expressions to watch and values are the corresponding callbacks. The value can also be a string of a method name, or an Object that contains additional options. The Vue instance will call `$watch()` for each entry in the object at instantiation. __You should not use an arrow function to define a method__ (or this won't be the Vue instance, it will be undefined)
+* [Lifecycle hooks](https://vuejs.org/v2/api/#Options-Lifecycle-Hooks) provide a way to define callbacks to be executed on certain moments in the instance's lifecycle
+* [See reference](https://vuejs.org/v2/api/) for advanded options such as
+    * [`directives`, `filters`](https://vuejs.org/v2/api/#Options-Assets)
+    * [`parent`, `mixins`, `extends`](https://vuejs.org/v2/api/#Options-Composition)
+    * [`name` (recursively invoke component), `model` (custom v-model), `inheritAttrs`](https://vuejs.org/v2/api/#Options-Misc)
+    * ...etc
+
 ```html
 <!-- html (the view) -->
 <div id="app"></div>
@@ -72,25 +91,6 @@ vm.$props
 vm.$options
 // ...etc
 ```
-
-The options object is the most important API of Vue:
-
-* `el` - Provide the Vue instance an existing DOM element to mount on. It can be a CSS selector string or an actual HTMLElement
-* `template` - A string template to be used as the markup for the Vue instance. The template will replace the mounted element. In the template, you can use Vue's template syntax.
-    * `render` can be used instead of template, to define it with js (or even jsx, react-wise)
-* `components` - A hash of components to be made available to the Vue instance (usable in the template).
-* `data` - The data object for the Vue instance. Vue will recursively convert its properties into getter/setters to make it “reactive”
-* `props` - A list/hash of attributes that are exposed to accept data from the parent component. It has an Array-based simple syntax and an alternative Object-based syntax that allows advanced configurations such as type checking, custom validation and default values
-    * `propsData` can be used only on the root Vue instance (`new Vue(...)`) and will pass the given values as props, instead of passing them via the template (for simplifying testing)
-* `methods` - Methods to be mixed into the Vue instance. You can access these methods directly on the VM instance, or use them in directive expressions. All methods will have their this context automatically bound to the Vue instance. __You should not use an arrow function to define a method__ (or this won't be the Vue instance, it will be undefined) 
-* `computed` - Computed properties to be mixed into the Vue instance. All getters and setters have their this context automatically bound to the Vue instance. Computed properties are cached, and only re-computed on reactive dependency changes. Note that __if you use an arrow function with a computed property, this won’t be the component’s instance, but you can still access the instance as the function’s first argument__.
-* `watch` - An object where keys are expressions to watch and values are the corresponding callbacks. The value can also be a string of a method name, or an Object that contains additional options. The Vue instance will call `$watch()` for each entry in the object at instantiation. __You should not use an arrow function to define a method__ (or this won't be the Vue instance, it will be undefined)
-* [Lifecycle hooks](https://vuejs.org/v2/api/#Options-Lifecycle-Hooks) provide a way to define callbacks to be executed on certain moments in the instance's lifecycle
-* [See reference](https://vuejs.org/v2/api/) for advanded options such as
-    * [`directives`, `filters`](https://vuejs.org/v2/api/#Options-Assets)
-    * [`parent`, `mixins`, `extends`](https://vuejs.org/v2/api/#Options-Composition)
-    * [`name` (recursively invoke component), `model` (custom v-model), `inheritAttrs`](https://vuejs.org/v2/api/#Options-Misc)
-    * ...etc
 
 # TEMPLATE SYNTAX
 
