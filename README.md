@@ -193,8 +193,6 @@ vm.$options
 <!------------------------------------------------------------->
 
 <input v-model="message" placeholder="edit me">
-
-<p>Message is: {{ message }}</p>
 <!-- ...where message is a variable of a vue instance's data -->
 
 <!------------------------------------------------------------->
@@ -552,6 +550,268 @@ methods: {
 
 <!-- this will only fire when no system modifiers are pressed -->
 <button v-on:click.exact="onClick">A</button>
+```
+
+# TWO WAY DATA-BINDING (v-model and FORM INPUTs)
+
+* You can use the v-model directive to create two-way data bindings on form input: it automatically picks the correct way (specific properties, events, etc) to update the element based on the input type
+* Vue data is treated as single source of truth (existing `value`, `checked`, or `selected` will be ignored)
+* [more](https://vuejs.org/v2/guide/forms.html)
+
+
+```html
+<input type="checkbox" id="jack" value="Jack" v-model="checkedNames">
+<label for="jack">Jack</label>
+<input type="checkbox" id="john" value="John" v-model="checkedNames">
+<label for="john">John</label>
+<input type="checkbox" id="mike" value="Mike" v-model="checkedNames">
+<label for="mike">Mike</label>
+<br>
+<span>Checked names: {{ checkedNames }}</span>
+```
+```js
+new Vue({
+  el: '...',
+  data: {
+    checkedNames: []
+  }
+})
+```
+
+```html
+<select v-model="selected">
+  <option v-for="option in options" v-bind:value="option.value">
+    {{ option.text }}
+  </option>
+</select>
+<span>Selected: {{ selected }}</span>
+```
+```js
+new Vue({
+  el: '...',
+  data: {
+    selected: 'A',
+    options: [
+      { text: 'One', value: 'A' },
+      { text: 'Two', value: 'B' },
+      { text: 'Three', value: 'C' }
+    ]
+  }
+})
+```
+
+## v-model value Bindings
+
+* For radio, checkbox and select options, the v-model binding values are usually static strings (or booleans for checkboxes). But sometimes, we may want to bind the value to a dynamic property on the Vue instance. We can use `v-bind` to achieve that. In addition, using `v-bind` allows us to bind the input value to non-string values
+* [more](https://vuejs.org/v2/guide/forms.html#Value-Bindings)
+
+```html
+<!-- `picked` is a string "a" when checked -->
+<input type="radio" v-model="picked" value="a">
+
+<!-- `picked` is the value of the variable a when checked -->
+<input type="radio" v-model="picked" v-bind:value="a">
+```
+
+## Checkboxes true-value and false-value
+
+```html
+<input
+  type="checkbox"
+  v-model="toggle"
+  true-value="yes"
+  false-value="no"
+>
+```
+
+## v-model modifiers
+
+```html
+<!-- synced after "change" instead of "input" -->
+<input v-model.lazy="msg">
+
+<!-- input to be automatically typecast as a Number (even with type="number", the value of HTML input elements always returns a string) -->
+<input v-model.number="age" type="number">
+
+<!-- whitespace to be trimmed automatically -->
+<input v-model.trim="msg">
+```
+
+## v-model with Components
+
+* HTML’s built-in input types won’t always meet your needs. Vue components allow you to build reusable inputs with completely customized behavior. These inputs even work with `v-model`! - [more](https://vuejs.org/v2/guide/components.html#Using-v-model-on-Components)
+
+
+# COMPONENTS
+
+* Components are reusable Vue instances with a name
+  * __they accept the same options as `new Vue`__. The only exceptions are a few root-specific options like `el`
+  * __`data` must be a function, not an object__ (else changing the data of one instance would affect the data of all other instances)
+  * __components must have only one root element__
+  * __components must be registered, globally or locally__, in order for Vue to use them
+* Components can be nested in a hierarchial tree. Communication between nodes of this tree happens in two way:
+    * __variable data of a component can be passed down the tree via `props`__ (like a arguments for a function) - [more](https://vuejs.org/v2/guide/components.html#Passing-Data-to-Child-Components-with-Props)
+    * __a component can throw an event (and a value) and its parent can choose to listen of any event using `v-on`__ (in the same way as with any native DOM event) - [more](https://vuejs.org/v2/guide/components.html#Listening-to-Child-Components-Events)
+* Custom events can also be used to create custom inputs that work with v-model - [more](https://vuejs.org/v2/guide/components.html#Using-v-model-on-Components)
+* [more](https://vuejs.org/v2/guide/components.html)
+
+## Props (downward)
+
+* downwards, from the parent to the component, via props, which become html attributes (alike to arguments of a function or of the constructor of a class) - [more](https://vuejs.org/v2/guide/components.html#Passing-Data-to-Child-Components-with-Props)
+
+```js
+Vue.component('blog-post', {
+  props: ['post'],
+  template: `
+    <div class="blog-post">
+      <h3>{{ post.title }}</h3>
+      <div v-html="post.content"></div>
+    </div>
+  `
+})
+```
+```js
+new Vue({
+  el: '#blog-post-demo',
+  data: {
+    posts: [
+      { id: 1, title: 'My journey with Vue' },
+      { id: 2, title: 'Blogging with Vue' },
+      { id: 3, title: 'Why Vue is so fun' }
+    ]
+  }
+})
+```
+
+```html
+<blog-posts
+  v-for="post in posts"
+  v-bind:key="post.id"
+  v-bind:post="post"
+></blog-posts>
+```
+
+## Events (upwards)
+
+* __The child component can emit an event on itself by calling the built-in `$emit` method, passing the name of the event as first parameter and, if needed, a single value as second parameter__
+* __The parent can choose to listen to any event on the child component instance with `v-on` (providing the event name). The emitted event’s associated value, if present, can be accessed with `$event`__
+    * __Or, if the event handler is a method, the value will be passed as the first parameter of that method__
+
+Root Vue instance:
+
+```js
+new Vue({
+  el: '#blog-posts-events-demo', // parent's id
+  data: {
+    posts: [/* ... */],
+    postFontSize: 1
+  }
+})
+```
+
+Child:
+
+```js
+Vue.component('blog-post', {
+  props: ['post'],
+  template: `
+    <div class="blog-post">
+      <h3>{{ post.title }}</h3>
+      <button v-on:click="$emit('enlarge-text', 0.1)">
+        Enlarge text
+      </button>
+      <div v-html="post.content"></div>
+    </div>
+  `
+})
+```
+
+Parent: 
+
+```html
+<div id="blog-posts-events-demo">
+  <div :style="{ fontSize: postFontSize + 'em' }">
+    <blog-post
+      v-for="post in posts"
+      v-bind:key="post.id"
+      v-bind:post="post"
+      v-on:enlarge-text="postFontSize += $event"
+    ></blog-post>
+  </div>
+</div>
+```
+
+Parent (if the event handler is a function):
+
+```js
+// ...
+methods: {
+  onEnlargeText: function (enlargeAmount) {
+    this.postFontSize += enlargeAmount
+  }
+}
+// ...
+```
+```html
+<blog-post
+  ...
+  v-on:enlarge-text="onEnlargeText"
+></blog-post>
+```
+
+# SLOTS (custom element's content)
+
+* Just like with HTML elements, it’s often useful to be able to pass content to a component - [more](https://vuejs.org/v2/guide/components.html#Content-Distribution-with-Slots)
+* we just add the `<slot></slot>` where we want it to go – and that’s it. We’re done!
+* [more (full guide on slots)](https://vuejs.org/v2/guide/components-slots.html)
+
+```html
+<alert-box>
+  Something bad happened.
+</alert-box>
+```
+```js
+Vue.component('alert-box', {
+  template: `
+    <div class="demo-alert-box">
+      <strong>Error!</strong>
+      <slot></slot>
+    </div>
+  `
+})
+```
+# DYNAMIC COMPONENTS (switching components)
+
+* Sometimes, it’s useful to dynamically switch between components, i.e. changing dinamically what component should be displayed (such as in a tabbed menu). This is made possible by Vue’s `<component>` element with the `is` special attribute, to which we can pass the name of a registered component, or a component’s options object - [more](https://vuejs.org/v2/guide/components.html#Dynamic-Components)
+  * this attribute can also be used with regular HTML elements, but with caveats 
+* [full guide](https://vuejs.org/v2/guide/components-dynamic-async.html)
+
+```html
+<!-- Component changes when currentTabComponent changes -->
+<component v-bind:is="currentTabComponent"></component>
+```
+
+# DOM TEMPLATE PARSING CAVEATS
+
+* Some HTML elements, such as `<ul>`, `<ol>`, `<table>` and `<select>` have restrictions on what elements can appear inside them, and some elements such as `<li>`, `<tr>`, and `<option>` can only appear inside certain other elements: this will lead to hoisting and rendering errors
+* Fortunately, the `is` special attribute offers a workaround:
+* This limitation does not apply if you are using string templates from one of the following sources:
+    * String templates (e.g. `template: '...'`)
+    * Single-file (`.vue`) components
+    * `<script type="text/x-template">`
+* [more](https://vuejs.org/v2/guide/components.html#DOM-Template-Parsing-Caveats)
+
+```html
+<!-- error -->
+<table>
+  <blog-post-row></blog-post-row>
+</table>
+```
+```html
+<!-- valid -->
+<table>
+  <tr is="blog-post-row"></tr>
+</table>
 ```
 
 

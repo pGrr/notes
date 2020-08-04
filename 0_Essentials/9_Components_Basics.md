@@ -124,7 +124,7 @@ methods: {
 * Custom events can also be used to create custom inputs that work with v-model - [more](https://vuejs.org/v2/guide/components.html#Using-v-model-on-Components)
 
 
-# SLOTS (custom element's text)
+# SLOTS (custom element's content)
 
 * Just like with HTML elements, it’s often useful to be able to pass content to a component - [more](https://vuejs.org/v2/guide/components.html#Content-Distribution-with-Slots)
 * we just add the `<slot></slot>` where we want it to go – and that’s it. We’re done!
@@ -149,8 +149,7 @@ Vue.component('alert-box', {
 # DYNAMIC COMPONENTS (switching components)
 
 * Sometimes, it’s useful to dynamically switch between components, i.e. changing dinamically what component should be displayed (such as in a tabbed menu)
-* The above is made possible by Vue’s `<component>` element with the is special attribute, to which we can pass the name of a registered component, or
-a component’s options object - [more](https://vuejs.org/v2/guide/components.html#Dynamic-Components)
+* The above is made possible by Vue’s `<component>` element with the is special attribute, to which we can pass the name of a registered component, or a component’s options object - [more](https://vuejs.org/v2/guide/components.html#Dynamic-Components)
 * this attribute can be used with regular HTML elements, but with caveats 
 * [full guide](https://vuejs.org/v2/guide/components-dynamic-async.html)
 
