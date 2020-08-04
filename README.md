@@ -165,7 +165,7 @@ vm.$options
 <span v-once>This will never change: {{ msg }}</span>
 
 <!------------------------------------------------------------->
-<!-- ONE-WAY DATA BINDING (v-bind) -->
+<!-- ONE-WAY DATA BINDING (v-bind = :) -->
 <!------------------------------------------------------------->
 
 <span v-bind:class="myClass"></span>
@@ -198,7 +198,7 @@ vm.$options
 <!-- ...where message is a variable of a vue instance's data -->
 
 <!------------------------------------------------------------->
-<!-- EVENTS -->
+<!-- EVENTS (v-on = @)-->
 <!------------------------------------------------------------->
 
 <button v-on:click="myFunction"></button>
@@ -210,41 +210,19 @@ vm.$options
 
 <!-- you can pass the original DOM event to the function -->
 <!-- with the special variable "$event" -->
-
 <button v-on:click="warn('Warning!', $event)"></button>
 
 <!-- shorthand syntax is "@" -->
-
 <button @click="() => alert('Hello my friend')"></button>
 
 <!-- Event modifiers -->
 
-<!-- instead of calling event.preventDefault() -->
 <form v-on:submit.prevent="onSubmit"> ... </form>
 
-<!-- instead of calling event.preventDefault() -->
-<a v-on:click.stop="doThis"></a>
+<!-- Key event modifiers -->
 
-<!-- an event targeting an inner element is handled here before being handled by that element -->
-<div v-on:click.capture="doThis">...</div>
-
-<!-- only trigger handler if event.target is the element itself -->
-<!-- i.e. not from a child element -->
-<div v-on:click.self="doThat">...</div>
-
-<!-- the click event will be triggered at most once (this is valid for components as well, not only dom events) -->
-<a v-on:click.once="doThis"></a>
-
-<!-- the scroll event's default behavior (scrolling) will happen -->
-<!-- immediately, instead of waiting for `onScroll` to complete  -->
-<!-- in case it contains `event.preventDefault()`. This is especially useful for improving performance on mobile devices, but don’t use .passive and .prevent together-->
-<div v-on:scroll.passive="onScroll">...</div>
-
-<!-- only call `vm.submit()` when the `key` is `Enter` -->
+<!-- called if $event.key == `Enter` -->
 <input v-on:keyup.enter="submit">
-
-<!-- the handler will only be called if $event.key is equal to 'PageDown' -->
-<input v-on:keyup.page-down="onPageDown">
 
 <!-- Alt + C -->
 <input v-on:keyup.alt.67="clear">
@@ -252,22 +230,23 @@ vm.$options
 <!-- Ctrl + Click -->
 <div v-on:click.ctrl="doSomething">Do something</div>
 
-<!-- this will fire even if Alt or Shift is also pressed -->
-<button v-on:click.ctrl="onClick">A</button>
-
-<!-- this will only fire when Ctrl and no other keys are pressed -->
+<!-- Ctrl and no other keys -->
 <button v-on:click.ctrl.exact="onCtrlClick">A</button>
 
-<!-- this will only fire when no system modifiers are pressed -->
+<!-- only click -->
 <button v-on:click.exact="onClick">A</button>
 
 <!------------------------------------------------------------->
 <!-- DYNAMIC ARGUMENTS -->
 <!------------------------------------------------------------->
+
 <div v-bind:[myAttribute]="myData"></div>
+
 <div v-on:[myEvent]="doSomething"></div>
+
 <button v-on="{[myAttr]: true}">Click on me if you can</button>
-<!-- myEvent is a variable of a vue instance's data and could be e.g. 'disabled' -->
+<!-- myAttr is a variable of a vue instance's data and could be e.g. 'disabled' -->
+
 <button v-on="{[myEvent]: function() { alert("Hello world!") }}">Hi</button>
 <!-- myEvent is a variable of a vue instance's data and could be e.g. 'click' -->
 
@@ -540,6 +519,13 @@ methods: {
 <input v-on:keyup.page-down="onPageDown">
 ```
 
+## Mouse event modifiers
+
+* These modifiers restrict the handler to events triggered by a specific mouse button - [more](https://vuejs.org/v2/guide/events.html#Mouse-Button-Modifiers)
+  * `.left`
+  * `.right`
+  * `.middle`
+
 ## System key events modifiers
 
 * You can use the following modifiers to trigger mouse or keyboard event listeners only when the corresponding modifier key is pressed (e.g. keyup.ctrl will only trigger if you release a key while holding down ctrl. It won’t trigger if you release the ctrl key alone):
@@ -567,12 +553,5 @@ methods: {
 <!-- this will only fire when no system modifiers are pressed -->
 <button v-on:click.exact="onClick">A</button>
 ```
-
-## Mouse event modifiers
-
-* These modifiers restrict the handler to events triggered by a specific mouse button - [more](https://vuejs.org/v2/guide/events.html#Mouse-Button-Modifiers)
-  * `.left`
-  * `.right`
-  * `.middle`
 
 
