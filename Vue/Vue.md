@@ -907,7 +907,6 @@ post: {
     * Or, if the event handler is a method, the value will be passed as the first parameter of that method
 * Unlike components and props, event names don’t provide any automatic case transformation. The name of an emitted event must exactly match the name used to listen to that event. - [more](https://vuejs.org/v2/guide/components-custom-events.html#Event-Names)
 
-
 Root Vue instance:
 
 ```js
@@ -968,6 +967,25 @@ methods: {
   ...
   v-on:enlarge-text="onEnlargeText"
 ></blog-post>
+```
+
+## Event bus
+
+* sometimes you want a global event bus to communicate events to all hierarchy level of the application (e.g. a grand-child component emitting an event that must be listened by the grand-parent)
+* This is achieved using the event bus pattern: the event bus is a new Vue instance, that we will emit events to with `eventBus.$emit('name', ...args)`
+* the listener listen on the eventBus with `eventBus.$on('name', (...args) => {...})`;
+* __As your applications grows, you want to rather use vue's own state management solution: vuex__.
+
+```js
+var eventBus = new Vue();
+
+// on our component, we call the emit event on the eventbus
+eventBus.$emit('review-submitted', productReview)
+
+// the listener
+eventBus.$on('review-submitted', (productReview) => {
+    // ...
+})
 ```
 
 ## Customizing component v-model
