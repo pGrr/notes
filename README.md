@@ -118,13 +118,17 @@ var vm = new Vue({
 ```
 
 ```js
-// In js code you can access the instance
-// properties and methods with the "$" prefix (to differentiate them from user-defined ones), like this:
+// In js code you can access userd-defined data, methods, etc
+// from the instance object: 
+vm.a
+vm.b
+vm.plus()
+// ...and instance properties and methods with the "$" prefix
+// (to differentiate them from user-defined ones):
 vm.$el
 vm.$data
 vm.$props
 vm.$options
-// ...etc
 ```
 
 # TEMPLATE SYNTAX API
@@ -166,12 +170,45 @@ vm.$options
 
 <!-- EVENTS -->
 <button v-on:click="myFunction"></button>
+<button v-on:click="counter += 1">Add</button>
 <!-- ...where myFunction is a function of a vue instance's methods -->
 <button v-on:click="() => alert('Hello my friend')"></button>
-<!-- with modifiers -->
-<form v-on:submit.prevent="onSubmit"> ... </form>
+<!-- you can pass the original DOM event to the function -->
+<!-- with the special variable "$event" -->
+<button v-on:click="warn('Warning!', $event)"></button>
 <!-- shorthand syntax is "@" -->
 <button @click="() => alert('Hello my friend')"></button>
+
+<!-- with modifiers -->
+<!-- instead of calling event.preventDefault() -->
+<form v-on:submit.prevent="onSubmit"> ... </form>
+<!-- instead of calling event.preventDefault() -->
+<a v-on:click.stop="doThis"></a>
+<!-- an event targeting an inner element is handled here before being handled by that element -->
+<div v-on:click.capture="doThis">...</div>
+<!-- only trigger handler if event.target is the element itself -->
+<!-- i.e. not from a child element -->
+<div v-on:click.self="doThat">...</div>
+<!-- the click event will be triggered at most once (this is valid for components as well, not only dom events) -->
+<a v-on:click.once="doThis"></a>
+<!-- the scroll event's default behavior (scrolling) will happen -->
+<!-- immediately, instead of waiting for `onScroll` to complete  -->
+<!-- in case it contains `event.preventDefault()`. This is especially useful for improving performance on mobile devices, but don’t use .passive and .prevent together-->
+<div v-on:scroll.passive="onScroll">...</div>
+<!-- only call `vm.submit()` when the `key` is `Enter` -->
+<input v-on:keyup.enter="submit">
+<!-- the handler will only be called if $event.key is equal to 'PageDown' -->
+<input v-on:keyup.page-down="onPageDown">
+<!-- Alt + C -->
+<input v-on:keyup.alt.67="clear">
+<!-- Ctrl + Click -->
+<div v-on:click.ctrl="doSomething">Do something</div>
+<!-- this will fire even if Alt or Shift is also pressed -->
+<button v-on:click.ctrl="onClick">A</button>
+<!-- this will only fire when Ctrl and no other keys are pressed -->
+<button v-on:click.ctrl.exact="onCtrlClick">A</button>
+<!-- this will only fire when no system modifiers are pressed -->
+<button v-on:click.exact="onClick">A</button>
 
 <!-- DYNAMIC ARGUMENTS -->
 <div v-bind:[myAttribute]="myData"></div>
@@ -231,4 +268,233 @@ vm.$options
 <!-- Component changes when currentTabComponent changes -->
 <component v-bind:is="currentTabComponent"></component>
 ```
+
+# CLASS AND STYLE BINDINGS
+
+## Binding classes
+
+* Vue provides special enhancements when v-bind is used with class and style: in addition to strings, the expressions can also evaluate to objects or arrays
+* `v-bind:class` can coexist with a `class` attribute 
+* classes added with `v-bind` will be added to the component’s root element and existing classes on this element will not be overwritten - [more](https://vuejs.org/v2/guide/class-and-style.html#With-Components)
+
+```html
+<!-- the presence of the active class will be determined by the data property isActive -->
+<div v-bind:class="{ active: isActive }"></div>
+
+<!-- v-bind:class can coexist with class and have multiple properties -->
+<div
+  class="static"
+  v-bind:class="{ active: isActive, 'text-danger': hasError }"
+></div>
+
+<!-- and can be defined as object of data: -->
+<div v-bind:class="classObject"></div>
+```
+```js
+data: {
+  classObject: {
+    active: true,
+    'text-danger': false
+  }
+}
+```
+
+```html
+<!-- or as a computed property -->
+<div v-bind:class="classObject"></div>
+```
+```js
+data: {
+  isActive: true,
+  error: null
+},
+computed: {
+  classObject: function () {
+    return {
+      active: this.isActive && !this.error,
+      'text-danger': this.error && this.error.type === 'fatal'
+    }
+  }
+}
+```
+
+```html
+<!-- Multiple classes can be specified with the array syntax -->
+<div v-bind:class="[isActive ? activeClass : '', errorClass]"></div>
+<!-- and you can combine it with the object syntax (same as above, but less verbose) -->
+<div v-bind:class="[{ active: isActive }, errorClass]"></div>
+```
+```js
+data: {
+  activeClass: 'active',
+  errorClass: 'text-danger'
+}
+```
+
+## Binding inline styles
+
+* The object syntax for `v-bind:style` is pretty straightforward - it looks almost like CSS, except it’s a JavaScript object. __You can use either camelCase or kebab-case (use quotes with kebab-case) for the CSS property names__ - [more](https://vuejs.org/v2/guide/class-and-style.html#Binding-Inline-Styles)
+* Note: When you use a CSS property that requires vendor prefixes in v-bind:style, for example transform, Vue will automatically detect and add appropriate prefixes to the applied styles.
+
+```html
+<div v-bind:style="styleObject"></div>
+```
+```js
+data: {
+  styleObject: {
+    color: 'red',
+    fontSize: '13px'
+  }
+} // you can as well computed properties
+```
+
+```html
+<!-- you can apply multiple style objects to the same element with the array syntax -->
+<div v-bind:style="[baseStyles, overridingStyles]"></div>
+```
+
+# EVENTS
+
+## v-on directive
+
+```html
+<div id="example-2">
+  <!-- `greet` is the name of a method defined below -->
+  <button v-on:click="greet">Greet</button>
+</div>
+```
+```js
+var example2 = new Vue({
+  el: '#example-2',
+  data: {
+    name: 'Vue.js'
+  },
+  // define methods under the `methods` object
+  methods: {
+    greet: function (event) {
+      // `this` inside methods points to the Vue instance
+      alert('Hello ' + this.name + '!')
+      // `event` is the native DOM event
+      if (event) {
+        alert(event.target.tagName)
+      }
+    }
+  }
+})
+```
+
+## $event = original DOM event
+
+* Sometimes we also need to access the original DOM event in an inline statement handler. You can pass it into a method using the special $event variable - [more](https://vuejs.org/v2/guide/events.html#Methods-in-Inline-Handlers)
+
+```html
+<button v-on:click="warn('Form cannot be submitted yet.', $event)">
+  Submit
+</button>
+```
+```js
+// ...
+methods: {
+  warn: function (message, event) {
+    // now we have access to the native event
+    if (event) {
+      event.preventDefault()
+    }
+    alert(message)
+  }
+}
+```
+
+## Event modifiers
+
+* To help event handlers contain only logic, instead of calling event modifiers such as `event.preventDefault()` or `event.stopPropagation()` inside event handlers, Vue provides event modifiers for `v-on` (directive postfixes denoted by a dot) - [more](https://vuejs.org/v2/guide/events.html#Event-Modifiers)
+
+```html
+<!-- the click event's propagation will be stopped -->
+<a v-on:click.stop="doThis"></a>
+
+<!-- the submit event will no longer reload the page -->
+<form v-on:submit.prevent="onSubmit"></form>
+
+<!-- modifiers can be chained -->
+<a v-on:click.stop.prevent="doThat"></a>
+
+<!-- just the modifier -->
+<form v-on:submit.prevent></form>
+
+<!-- use capture mode when adding the event listener -->
+<!-- i.e. an event targeting an inner element is handled here before being handled by that element -->
+<div v-on:click.capture="doThis">...</div>
+
+<!-- only trigger handler if event.target is the element itself -->
+<!-- i.e. not from a child element -->
+<div v-on:click.self="doThat">...</div>
+
+<!-- the click event will be triggered at most once (this is valid for components as well, not only dom events) -->
+<a v-on:click.once="doThis"></a>
+
+<!-- the scroll event's default behavior (scrolling) will happen -->
+<!-- immediately, instead of waiting for `onScroll` to complete  -->
+<!-- in case it contains `event.preventDefault()`. This is especially useful for improving performance on mobile devices, but don’t use .passive and .prevent together-->
+<div v-on:scroll.passive="onScroll">...</div>
+```
+
+## Key events modifiers
+
+* You can directly use any valid key names exposed via `KeyboardEvent.key` as modifiers by converting them to kebab-case.
+* Vue provides aliases for the most commonly used key codes when necessary for legacy browser support:
+  * `.enter`
+  * `.tab`
+  * `.delete` (captures both “Delete” and “Backspace” keys)
+  * `.esc`
+  * `.space`
+  * `.up`
+  * `.down`
+  * `.left`
+  * `.right`
+* [more](https://vuejs.org/v2/guide/events.html#Key-Modifiers)
+
+```html
+<!-- only call `vm.submit()` when the `key` is `Enter` -->
+<input v-on:keyup.enter="submit">
+
+<!-- the handler will only be called if $event.key is equal to 'PageDown' -->
+<input v-on:keyup.page-down="onPageDown">
+```
+
+## System key events modifiers
+
+* You can use the following modifiers to trigger mouse or keyboard event listeners only when the corresponding modifier key is pressed (e.g. keyup.ctrl will only trigger if you release a key while holding down ctrl. It won’t trigger if you release the ctrl key alone):
+  * `.ctrl`
+  * `.alt`
+  * `.shift`
+  * `.meta` (Windows key, Macintosh key, etc)
+
+```html
+<!-- Alt + C -->
+<input v-on:keyup.alt.67="clear">
+
+<!-- Ctrl + Click -->
+<div v-on:click.ctrl="doSomething">Do something</div>
+```
+
+## Exact
+
+* The `.exact` modifier allows control of the exact combination of system modifiers needed to trigger an event. - [more](https://vuejs.org/v2/guide/events.html#exact-Modifier)
+
+```html
+<!-- this will only fire when Ctrl and no other keys are pressed -->
+<button v-on:click.ctrl.exact="onCtrlClick">A</button>
+
+<!-- this will only fire when no system modifiers are pressed -->
+<button v-on:click.exact="onClick">A</button>
+```
+
+## Mouse event modifiers
+
+* These modifiers restrict the handler to events triggered by a specific mouse button - [more](https://vuejs.org/v2/guide/events.html#Mouse-Button-Modifiers)
+  * `.left`
+  * `.right`
+  * `.middle`
+
 
