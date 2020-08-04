@@ -13,6 +13,22 @@ npm install -g @vue/cli @vue/cli-service-global
 yarn global add @vue/cli @vue/cli-service-global
 ```
 
+# Rapid prototyping
+
+```bash
+# Serve the current directory vue app (infers the entry file)
+vue serve
+
+# Serve a .js or .vue file in development mode with zero config
+vue serve <COMPONENT>
+
+# Build the current directory vue app (infers the entry file)
+vue build
+
+# Build a .js or .vue file in development mode with zero config
+vue build <COMPONENT>
+```
+
 # Create project
 
 * `vue create project-name`
