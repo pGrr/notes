@@ -655,8 +655,9 @@ new Vue({
 * Custom events can also be used to create custom inputs that work with v-model - [more](https://vuejs.org/v2/guide/components.html#Using-v-model-on-Components)
 * [more](https://vuejs.org/v2/guide/components.html)
 
-## Single file components
+## Single file components (.vue)
 
+* Needs webpack or vue-cli configured (for `.vue` compilation)
 * 3 sections: 
   * __template__: skeleton, structure of the component
   * __script__: brain, logic and behaviour
@@ -730,7 +731,8 @@ new Vue({
 
 ## Single file component registration
 
-* You can register single file components by importing its file and then registering as seen above
+* You can register single file components by importing its file and then registering as seen above 
+* Needs webpack or vue-cli configured (for `.vue` compilation)
 * You can import `.js` and `.vue` (single-file-components) files, and you can omit the file extension (or not). All of the following are interchangeble 
   * `import ComponentA from './ComponentA.vue'` (single-file-component)
   * `import ComponentA from './ComponentA.js'`

@@ -7,7 +7,14 @@
 
 # Install
 
-* `npm install -g @vue/cli`
+```bash
+npm install -g @vue/cli @vue/cli-service-global
+# or
+yarn global add @vue/cli @vue/cli-service-global
+```
+
+# Create project
+
 * `vue create project-name`
   * you can select what libraries you wish in your app, e.g. babel, linter, vuex, router
   * will create a `project-name` folder containing our app
