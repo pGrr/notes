@@ -136,81 +136,134 @@ vm.$options
 * This is Vue's own syntax, usable inside a template's definition or directly inside a Vue instance (the root vue instance or any vue component)
 
 ```html
+<!------------------------------------------------------------->
 <!-- INTERPOLATION -->
+<!------------------------------------------------------------->
+
 <span>My name is: {{ myName }}</span>
+
 <span>I'm {{ myAge + 5 }} years old!</span>
+
 <span>My pets' names are {{ myPets.join(", ") }}</span>
+
 <span>I'm a {{ myAge > 50 ? 'kinda old' : 'young' }}!</span>
+
 <!-- js Expressions, not statements! Following are wrong: -->
 {{ let msg = 'Hello World!'; }}
 {{ if(true) { return 'Yes!' } }}
 
+<!------------------------------------------------------------->
 <!-- HTML RENDERING -->
+<!------------------------------------------------------------->
+
 <span v-html="myHTMLData"></span>
 
+<!------------------------------------------------------------->
 <!-- IMMUTABILITY (v-once) -->
+<!------------------------------------------------------------->
+
 <span v-once>This will never change: {{ msg }}</span>
 
+<!------------------------------------------------------------->
 <!-- ONE-WAY DATA BINDING (v-bind) -->
+<!------------------------------------------------------------->
+
 <span v-bind:class="myClass"></span>
+
 <!-- shorthand syntax is ":" -->
+
 <span :class="myClass"></span>
+
 <div :class="{green: true, red: false}"></div>
+
 <div :class="{green: 5 > 1, red: false && 9 < 16}"></div>
+
 <!-- you can concatenate strings -->
+
 <a :href="baseURL + '/post/' + postId">Read more</a>
+
 <!-- no-value attributes (required, disabled, etc) -->
+
 <button :required="true"></button>
+
 <button :disabled="password.length < 6"></button>
 
+<!------------------------------------------------------------->
 <!-- TWO WAY DATA BINDING (v-model <-> form inputs) -->
+<!------------------------------------------------------------->
+
 <input v-model="message" placeholder="edit me">
+
 <p>Message is: {{ message }}</p>
 <!-- ...where message is a variable of a vue instance's data -->
 
+<!------------------------------------------------------------->
 <!-- EVENTS -->
+<!------------------------------------------------------------->
+
 <button v-on:click="myFunction"></button>
+
 <button v-on:click="counter += 1">Add</button>
 <!-- ...where myFunction is a function of a vue instance's methods -->
+
 <button v-on:click="() => alert('Hello my friend')"></button>
+
 <!-- you can pass the original DOM event to the function -->
 <!-- with the special variable "$event" -->
+
 <button v-on:click="warn('Warning!', $event)"></button>
+
 <!-- shorthand syntax is "@" -->
+
 <button @click="() => alert('Hello my friend')"></button>
 
-<!-- with modifiers -->
+<!-- Event modifiers -->
+
 <!-- instead of calling event.preventDefault() -->
 <form v-on:submit.prevent="onSubmit"> ... </form>
+
 <!-- instead of calling event.preventDefault() -->
 <a v-on:click.stop="doThis"></a>
+
 <!-- an event targeting an inner element is handled here before being handled by that element -->
 <div v-on:click.capture="doThis">...</div>
+
 <!-- only trigger handler if event.target is the element itself -->
 <!-- i.e. not from a child element -->
 <div v-on:click.self="doThat">...</div>
+
 <!-- the click event will be triggered at most once (this is valid for components as well, not only dom events) -->
 <a v-on:click.once="doThis"></a>
+
 <!-- the scroll event's default behavior (scrolling) will happen -->
 <!-- immediately, instead of waiting for `onScroll` to complete  -->
 <!-- in case it contains `event.preventDefault()`. This is especially useful for improving performance on mobile devices, but don’t use .passive and .prevent together-->
 <div v-on:scroll.passive="onScroll">...</div>
+
 <!-- only call `vm.submit()` when the `key` is `Enter` -->
 <input v-on:keyup.enter="submit">
+
 <!-- the handler will only be called if $event.key is equal to 'PageDown' -->
 <input v-on:keyup.page-down="onPageDown">
+
 <!-- Alt + C -->
 <input v-on:keyup.alt.67="clear">
+
 <!-- Ctrl + Click -->
 <div v-on:click.ctrl="doSomething">Do something</div>
+
 <!-- this will fire even if Alt or Shift is also pressed -->
 <button v-on:click.ctrl="onClick">A</button>
+
 <!-- this will only fire when Ctrl and no other keys are pressed -->
 <button v-on:click.ctrl.exact="onCtrlClick">A</button>
+
 <!-- this will only fire when no system modifiers are pressed -->
 <button v-on:click.exact="onClick">A</button>
 
+<!------------------------------------------------------------->
 <!-- DYNAMIC ARGUMENTS -->
+<!------------------------------------------------------------->
 <div v-bind:[myAttribute]="myData"></div>
 <div v-on:[myEvent]="doSomething"></div>
 <button v-on="{[myAttr]: true}">Click on me if you can</button>
@@ -218,53 +271,78 @@ vm.$options
 <button v-on="{[myEvent]: function() { alert("Hello world!") }}">Hi</button>
 <!-- myEvent is a variable of a vue instance's data and could be e.g. 'click' -->
 
+<!------------------------------------------------------------->
 <!-- CONDITIONAL RENDERING (v-if, v-show) -->
+<!------------------------------------------------------------->
+
 <!-- v-if/v-elseif/v-else (true conditional rendering) -->
+
 <div v-if="type === 'A'">A</div>
+
 <div v-else-if="type === 'B'">B</div>
+
 <div v-else>Not A nor B</div>
+
 <!-- v-show (always rendered, conditional display) -->
+
 <h1 v-show="ok">Hello!</h1>
+
 <!-- use template tag to apply it to a group of elements -->
+
 <template v-if="ok">
   <h1>Title</h1>
   <p>Paragraph 1</p>
   <p>Paragraph 2</p>
 </template>
 
+<!------------------------------------------------------------->
 <!-- LIST RENDERING (v-for) -->
+<!------------------------------------------------------------->
+
 <ul id="example-2">
   <li v-for="(item, index) in items">
     {{ parentMessage }} - {{ index }} - {{ item.message }}
   </li>
 </ul>
+
 <!-- iterate through properties of an object -->
 <div v-for="(value, name, index) in object">
   {{ index }}. {{ name }}: {{ value }}
 </div>
+
 <!-- giving an integer n will repeat the element n times -->
 <span v-for="n in 10">{{ n }} </span>
+
 <!-- use template tag to group multiple elements -->
 <template v-for="item in items">
   <li>{{ item.msg }}</li>
   <li class="divider" role="presentation"></li>
 </template>
+
 <!-- it’s not recommended to use v-if and v-for together -->
 
+<!------------------------------------------------------------->
 <!-- DOM PARSING CAVEATS ("is" special attribute ) -->
+<!------------------------------------------------------------->
+
 <!-- some elements, such as <ul>, <ol>, <table> and <select> --> 
 <!-- have restrictions on what elements can appear inside them, -->
 <!-- and some elements such as <li>, <tr>, and <option> can only -->
 <!-- appear inside certain other elements. -->
+<!-- The special "is" attribute is a solution for this problem: -->
+
 <table>
   <blog-post-row></blog-post-row> <!-- not valid -->
 </table>
-<!-- The special "is" attribute is a solution for this problem: -->
+
 <table>
   <tr is="blog-post-row"></tr> <!-- ok -->
 </table>
 
+<!------------------------------------------------------------->
 <!-- DYNAMIC COMPONENTS -->
+<!------------------------------------------------------------->
+
 <!-- Component changes when currentTabComponent changes -->
 <component v-bind:is="currentTabComponent"></component>
 ```
@@ -355,7 +433,7 @@ data: {
 
 # EVENTS
 
-## v-on directive
+## v-on (@) directive
 
 ```html
 <div id="example-2">
