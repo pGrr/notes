@@ -3,9 +3,8 @@
 * Just like with HTML elements, it’s often useful to be able to pass content to a component - [more](https://vuejs.org/v2/guide/components.html#Content-Distribution-with-Slots)
 * we just add the `<slot></slot>` where we want it to go – and that’s it. We’re done! - [more (full guide on slots)](https://vuejs.org/v2/guide/components-slots.html)
 * If we want to provide a default value we just place it inside: `<slot>Default value</value>` - [more](https://vuejs.org/v2/guide/components-slots.html#Fallback-Content)
-* the slot tag will be replaced with the content passed inside a component
+* the slot tag will be replaced with the content passed inside a component, or its default value
 * If template did not contain a `<slot>` element, any content provided between its opening and closing tag would be discarded
-* If the component hasn't declared a slot, then the passed content will be ignored
 * Slots can contain any template code, including html or other components
 * [more](https://vuejs.org/v2/guide/components-slots.html#Slot-Content)
 
