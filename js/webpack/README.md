@@ -8,5 +8,47 @@
 # INSTALL
 
 ```bash
-npm install webpack[@version]
+# installation
+npm install webpack
+npm install webpack-cli
+
+# run webpack without installing
+npx webpack
+```
+
+# USAGE
+
+* `webpack` command by default will look in current directory for a `index.js` file as source file and will produce a `main.js` file as output result
+
+```bash
+webpack # if installed globally
+./node_modules/.bin/webpack # if installed locally
+```
+
+Typically `webpack` command is set up as npm's `build` script in `package.json` file:
+
+```json
+"scripts": {
+    "build": "./node_modules/.bin/webpack"
+}
+```
+
+# WEBPACK CONFIG FILE
+
+* `webpack.config.js` (root project folder) - is the main webpack configuration file from which the `webpack` command will load all configuration options 
+    * you can use a different location and different filename, but then you have to specify it in the webpack command: `npx webpack --config my.custom.webpack.config.js` 
+
+```js
+// webpack.config.js
+
+// node module to route created files into the proper directory
+const path = require("path");
+
+module.exports = {
+    entry: "./src/index.js",
+    output: {
+        fileName: "main.js",
+        path: path.resolve(__dirname, "dist")
+    }
+}
 ```

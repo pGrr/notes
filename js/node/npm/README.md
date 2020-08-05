@@ -38,6 +38,7 @@ npm init # set up a project in current directory
 
 # locally (dev and production)
 npm install <PACKAGE> [<PACKAGE>...] 
+npm i <PACKAGE> # shortcut syntax
 npm install <PACKAGE>[@<VERSION>] # specific version
 npm install <PACKAGE>@latest # latest
 
