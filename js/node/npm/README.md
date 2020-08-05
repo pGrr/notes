@@ -126,17 +126,19 @@ npm install <PACKAGE> # for all packages causing problems
 * There are many pre-defined properties (e.g. `publish`, `start`, `version`, `pre-test`, `build`, etc.) that can be used to run our scripts during execution of a specific npm command ([See reference](https://docs.npmjs.com/misc/scripts))
 * You can also create your own and launch it with `npm run <NAME>`
 
+E.g. in `package.json`:
+
 ```json
-// package.json
-// ...
 "scripts": {
-    // default script "test" will be executed on "npm test" command
     "test": "echo \"Error: no test specified\" && exit 1", 
-    // custom "myscript" will be executed on "npm run myscript"
     "myscript": "echo Hello world!"
 }
-// ...
 ```
+
+In the above example:
+
+* default script `test` will be executed on `npm test` command
+* custom `myscript` will be executed on `npm run myscript`
 
 # NPX
 
@@ -165,14 +167,12 @@ npx mocha
 npx cowsay "hello!"
 ```
 
+E.g. create a new angular app, without installing angular-cli (in `package.json`):
+
 ```json
-// package.json
-// ...
 "scripts": {
-    // create a new angular app, without installing angular-cli
     "ng-new-app": "npx -p @angular/cli ng new myapp"
 }
-// ...
 ```
 
 # NPM ALTERNATIVES (e.g. YARN)
