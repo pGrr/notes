@@ -37,6 +37,8 @@ exports.default = defaultTask
 
 ```bash
 gulp # run default task
+
+gulp <TASK> # run TASK
 ```
 
 # TASKS
