@@ -1,6 +1,6 @@
 # GULP
 
-* Gulp.js is a task runner mostly used for web-development, that let you easily automate tasks, e.g.:
+* Gulp.js is a task runner mostly used for web-development, that let you easily automate tasks and perform operation on files, e.g.:
     * transpiling
     * minification
     * images optimizazion
