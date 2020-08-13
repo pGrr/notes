@@ -550,3 +550,8 @@ exports.build = build;
 exports.watch = watch;
 exports.default = build;
 ```
+
+# RECIPES
+
+[See recipes](https://github.com/gulpjs/gulp/tree/master/docs/recipes)
+
