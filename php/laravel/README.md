@@ -227,25 +227,55 @@ HTML forms do not support PUT, PATCH or DELETE actions. So, when defining PUT, P
 * Laravel provides basic frontend setup and scaffolding (which you can use or you can set up your own), using `npm`, `bootstrap`, `vue` (or `react`) and `webpack` (see Laravel Mix)
 * `composer require laravel/ui:^1.0 --dev` provides bootstrap and vue scaffolding (you can choose react as well or use your own set of libraries). Once `laravel/ui` is installed you can generate frontend scaffolding with `artisan ui bootstrap`, `artisan ui vue`, `artisan ui react`, `artisan ui bootstrap --auth`, `artisan ui vue --auth`, etc
     * you can create your own laravel ui commands by registering them in a service provider (see docs)
-* `npm install` in root project directory will install frontend dependencies, then `npm run dev` will process the instructions in `webpack.mix.js` file. By default it will compile `resources/sass/app.scss` into `public/css` and `resources/js/app.js` into `public/js`producing one single css file and one single js file to be loaded in each page (but this can be customized as you wish)
+* `npm install` in root project directory will install frontend dependencies, then `npm run dev` (or `npm run watch`) will process the instructions in `webpack.mix.js` file. By default it will compile `resources/sass/app.scss` into `public/css` and `resources/js/app.js` into `public/js`producing one single css file and one single js file to be loaded in each page (but this can be customized as you wish)
 * it also creates by default a `resources/js/components` where vue or react components may be placed (then they have to be registered inside `resources/js/app.js`
+* for more complex front end workflow configurations (e.g. browsersync, etc), [see laravel mix docs](https://laravel.com/docs/6.x/mix)
 
+# DATABASE 
 
-# MODELS (Eloquent ORM)
+## DB Configuration
 
-* Laravel uses Eloquent (active-record ORM)
-    * Each Model class abstracts a database table and acts as a query builder (i.e. has crud methods for the associated table to be used instead of SQL)
-    * Each Migration class is a table schema modification associated with a timestamp: when you run `artisan migrate` Laravel will use the timestamp to determine which and in what ordermigrations are be applied (without loosing any data and being able to track schema modification changes alike as in version control)
+* Laravel supports MySql, PostGre, Sqlite and SQL Server.
 * Check database connection parameters in `.env` and `config/database.php`
-* If you already have a database table, you just have to create the corresponding model with the correct name (considering laravel naming conventions): creating a migration is optional (but can be done).
-    * `artisan make:model NAME` creates a model class in `app` folder.
-    * Eloquent will assume the `Flight` model stores records in the `flights` table, while an `AirTrafficController` model would store records in an `air_traffic_controllers` table.
-    * You can specify a different table name by setting a property in the model class: `protected $table = 'my_flights'`; 
-* If you need to create a new table for the model using eloquent you must create the associated migration too and define your table schema there.    
-    * `artisan make:model NAME --migration` creates an associated migration together with the model 
-    * `artisan make:migration create_users_table` creates a migration using users as table parameter
 
-## Define/update the table schema in the migration class
+```bash
+# Sqlite setup
+touch database/database.sqlite
+# ...then, in .env file:
+DB_CONNECTION=sqlite
+DB_DATABASE=/absolute/path/to/database.sqlite
+DB_FOREIGN_KEYS=true # to enable foreign keys
+```
+
+## DB API
+
+* Once you have configured your database connection, you may:
+    * get the default connection with `DB::connection()` or a specific one with `DB::connection('foo')`, or access the underlying pdo with `$pdo = DB::connection()->getPdo();`
+    * run queries using the DB facade, which provides methods for each type of query: select, update, insert, delete, and statement, e.g. `$email = DB::table('users')->where('name', 'John')->value('email');` (see examples below).The select method will always return an array of results. Each result within the array will be a PHP `stdClass` object, allowing to access column values as properties
+    * use the query builder api to make queries ([see docs](https://laravel.com/docs/6.x/queries)), e.g. `$email = DB::table('users')->where('name', 'John')->value('email');`
+    * receive each SQL query, binding or timing for logging or debugging purposes by registering a `listen` method in a service provider (see docs) 
+    * use the `transaction` method on the DB facade to run a set of operations within a database transaction. If an exception is thrown within the transaction Closure, the transaction will automatically be rolled back. If the Closure executes successfully, the transaction will automatically be committed (see docs). Also, you can manually control a transaction with `DB::beginTransaction()`, `DB::rollback()`, `DB::commit()` (this api is the same used in the query builder and in Eloquent ORM).
+    * paginate results, e.g. with `DB::table('users')->paginate(15);` (see docs). Also, default ui scaffolding for pagination is available (if you use bootstrap).
+
+```php
+$users = DB::select('select * from users where active = ?', [1]);
+$results = DB::select('select * from users where id = :id', ['id' => 1]);
+DB::insert('insert into users (id, name) values (?, ?)', [1, 'Dayle']);
+$affected = DB::update('update users set votes = 100 where name = ?', ['John']);
+$deleted = DB::delete('delete from users');
+DB::statement('drop table users');
+$email = DB::table('users')->where('name', 'John')->value('email');
+// ...etc (see query builder docs)
+```
+
+## Migrations
+
+* Migrations are the laravel API to manage the database schema (creating, updating). In addition to what you can accomplish with plain sql, migrations provide version control of the database schema modifications, directly in the source code.
+* Each Migration class is a table schema modification associated with a timestamp: when you run `artisan migrate` Laravel will use the timestamp to determine which and in what ordermigrations are be applied (without loosing any data and being able to track schema modification changes alike as in version control)
+
+```bash
+artisan make:migration create_users_table # creates a migration using users as table parameter
+```
 
 ```php
 class CreateFlightsTable extends Migration
@@ -276,6 +306,18 @@ class CreateFlightsTable extends Migration
     }
 }
 ```
+
+# MODELS (Eloquent ORM)
+
+* Laravel uses Eloquent (active-record ORM)
+    * Each Model class abstracts a database table and acts as a query builder (i.e. has crud methods for the associated table to be used instead of SQL)
+* If you already have a database table, you just have to create the corresponding model with the correct name (considering laravel naming conventions): creating a migration is optional (but can be done).
+    * `artisan make:model NAME` creates a model class in `app` folder.
+    * Eloquent will assume the `Flight` model stores records in the `flights` table, while an `AirTrafficController` model would store records in an `air_traffic_controllers` table.
+    * You can specify a different table name by setting a property in the model class: `protected $table = 'my_flights'`; 
+* If you need to create a new table for the model using eloquent you must create the associated migration too and define your table schema there.    
+    * `artisan make:model NAME --migration` creates an associated migration together with the model 
+    * `artisan make:migration create_users_table` creates a migration using users as table parameter
 
 ## Model configuration
 
@@ -345,6 +387,67 @@ $flight->save();
     * you can restore a soft deleted instance (or an entire collection) into an active state with `$instance->restore();`
     * when using soft-deletion, to permanently delete an instance or a collection you must use `forcedelete` instead of `delete`
 * you can compare two instances with `$instance1->is($instance2)`
+
+## Relationships
+
+* to define a relationships of a model, you declare inside that model a public method which returns `$this->hasOne('App\MyRelatedModel')`, or one or the other relationships methods
+    * `hasOne` and `belongsTo` (inverse, in the related model)
+    * `hasMany` and `belongsTo` (inverse, in the related model)
+    * `belongsToMany` and `belongsToMany` - this will create an intermediate table which by default is named `modela_modelb` (where models are placed in alphabetical order)
+    * `hasOneThrough` and `hasManyThrough` define a one way relationships through an intermediate table
+* you can access the intermediate table with the `pivot` property, e.g. `App\User::find(1)->roles->pivot->created_at` (pivot represents the intemediate table and can be used as any other model. If you wish, you can assign a different name than 'pivot', see example below)
+* Dynamic properties allow you to access relationship methods as if they were properties defined on the model (see docs for more info)
+* Since, like Eloquent models themselves, relationships also serve as powerful query builders, defining relationships as methods provides powerful method chaining and querying capabilities and you can use all query builder methods on them.
+
+```php
+class User extends Model
+{
+    public function phone()
+    {
+        return $this->hasOne('App\Phone'); // assumes a user_id foreign key and local primary key
+    }
+}
+
+// Variants:
+
+// specify the foreign key, if different
+return $this->hasOne('App\Phone', 'foreign_key'); 
+// specify the local key, if it's not the primary key
+return $this->hasOne('App\Phone', 'foreign_key', 'local_key'); 
+
+// belongsToMany syntax is different:
+return $this->belongsToMany('App\Role', 'role_user'); // custom table name
+return $this->belongsToMany('App\Role', 'role_user', 'user_id', 'role_id'); // table name, foreign key, local key
+return $this->belongsToMany('App\Role')->withPivot('column1', 'column2'); // extra columns
+return $this->belongsToMany('App\Role')->withTimestamps(); // add timestamps
+return $this->belongsToMany('App\Podcast')->as('subscription')->withTimestamps(); // customize pivot name
+User::with('podcasts')->first()->subscription->created_at;
+return $this->belongsToMany('App\Role')->wherePivot('approved', 1); // filter basing on pivot (intermediate table) columns
+return $this->belongsToMany('App\Role')->wherePivotIn('priority', [1, 2]);
+return $this->belongsToMany('App\Role')->wherePivotNotIn('priority', [1, 2]);
+return $this->belongsToMany('App\User')->using('App\RoleUser'); // use custom model (with 'extends Pivot') as intermediate table
+
+// hasOneThrough and hasManyThrough syntax is different:
+return $this->hasOneThrough(
+    'App\History', // final model
+    'App\User', // intermediate model
+    'supplier_id', // Foreign key on users table... (optional)
+    'user_id', // Foreign key on history table... (optional)
+    'id', // Local key on suppliers table... (optional)
+    'id' // Local key on users table... (optional)
+);
+return $this->hasManyThrough(
+    'App\Post', // final model
+    'App\User', // intermediate model
+    'country_id', // Foreign key on users table... (optional)
+    'user_id', // Foreign key on posts table... (optional)
+    'id', // Local key on countries table... (optional)
+    'id' // Local key on users table... (optional)
+);
+
+// ...then you can access the related value as a property
+$phone = User::find(1)->phone; 
+```
 
 ## Model's custom query scopes
 
