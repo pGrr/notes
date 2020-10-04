@@ -390,14 +390,19 @@ $flight->save();
 
 ## Relationships
 
+### Define relationships
+
 * to define a relationships of a model, you declare inside that model a public method which returns `$this->hasOne('App\MyRelatedModel')`, or one or the other relationships methods
     * `hasOne` and `belongsTo` (inverse, in the related model)
     * `hasMany` and `belongsTo` (inverse, in the related model)
     * `belongsToMany` and `belongsToMany` - this will create an intermediate table which by default is named `modela_modelb` (where models are placed in alphabetical order)
     * `hasOneThrough` and `hasManyThrough` define a one way relationships through an intermediate table
-* you can access the intermediate table with the `pivot` property, e.g. `App\User::find(1)->roles->pivot->created_at` (pivot represents the intemediate table and can be used as any other model. If you wish, you can assign a different name than 'pivot', see example below)
-* Dynamic properties allow you to access relationship methods as if they were properties defined on the model (see docs for more info)
-* Since, like Eloquent models themselves, relationships also serve as powerful query builders, defining relationships as methods provides powerful method chaining and querying capabilities and you can use all query builder methods on them.
+	* you can access the intermediate table with the `pivot` property, e.g. `App\User::find(1)->roles->pivot->created_at` (pivot represents the intemediate table and can be used as any other model. If you wish, you can assign a different name than 'pivot', see example below)
+    * Laravel supports polymorphic relationship which allows the target model to belong to more than one type of model using a single association.
+	* One-to-one polymorphic: For example, a blog Post and a User may share a polymorphic relation to an Image model. Using a one-to-one polymorphic relation allows you to have a single list of unique images that are used for both blog posts and user accounts. In this case you can `return $this->morphTo();` in the `imageble` method of `Image` and `return $this->morphOne('App\Image', 'imageable');` in the `image` method of `Post` and `User`. Then you can `$image = $post->image;`, `$image = $user->image;` and `$imageable = $image->imageable;`, where `$imageable` will be either a `Post` or `User` instance. 
+	* One-to-many polymorphic: For example, imagine users of your application can "comment" on both posts and videos. Using polymorphic relationships, you may use a single comments table for both of these scenarios. You can `return $this->morphTo();` in the `commentable` method of `Comment`, and `return $this->morphMany('App\Comment', 'commentable');` in the `comments` method of both `Post` and `Video`. Then you can `foreach ($post->comments as $comment) {  }`, `foreach ($post->comments as $comment) {  }` and `$commentable = $comment->commentable;`, where `$commentable` can be either a `Post` or `Video` instance.
+	* Many-to-many relationships: For example, a blog Post and Video model could share a polymorphic relation to a Tag model. Using a many-to-many polymorphic relation allows you to have a single list of unique tags that are shared across blog posts and videos. You can `return $this->morphToMany('App\Tag', 'taggable');` in the `tags` method of both `Post` and `Video` and then in `Tag` you `return $this->morphedByMany('App\Post', 'taggable');` from the `posts` method and `return $this->morphedByMany('App\Video', 'taggable');` from the `videos` method. Then you can foreach `($post->tags as $tag) {  }`, `($video->tags as $tag) {  }`, `foreach ($tag->videos as $video) { }` and `foreach ($tag->posts as $post) { }`
+	* Custom polymorphic types: you may wish to decouple your database from your application's internal structure. In that case, you may define a "morph map" to instruct Eloquent to use a custom name for each model instead of the class name
 
 ```php
 class User extends Model
@@ -445,8 +450,210 @@ return $this->hasManyThrough(
     'id' // Local key on users table... (optional)
 );
 
-// ...then you can access the related value as a property
-$phone = User::find(1)->phone; 
+// belongsTo, hasOne, hasOneThrough, and morphOne relationships 
+// allow you to define a default model that will be returned if the given relationship is null
+return $this->belongsTo('App\User')->withDefault();
+return $this->belongsTo('App\User')->withDefault([ 'name' => 'Guest Author', ]);
+return $this->belongsTo('App\User')->withDefault(function ($user, $post) { $user->name = 'Guest Author'; });
+```
+
+### Query relationships
+
+* Eloquent relations are methods. But Laravel implements a mechanism called "Dinamyc-properties" which allow you to access relationship methods as if they were properties defined on the model (see docs for more info)
+    * when you access relations as methods, you get an instance obtain an instance of the relationship without actually executing the relationship queries, and since that instance serves as a query builder, you can use all [query builder methods](https://laravel.com/docs/6.x/queries) to chain constraints to the query before the actual sql execution.
+    * when you access relations as properties you don't get a relationship instance: you get an object that will contain the final result of the query. So you can't use them as query builder. By default the data is "lazy loaded", which means the query is executed when you first access the property.
+        * You can use eager loading to pre-load relationships you know will be accessed after loading the model. Eager loading provides a significant reduction in SQL queries that must be executed to load a model's relations.
+
+```php
+// accessing relationships as methods, you can chain query contstrains
+$user->posts()->where('active', 1)->get(); // select * from posts where user_id = ? and active = 1
+$user->posts()->where('active', 1)
+        ->orWhere('votes', '>=', 100)
+        ->get(); // select * from posts where user_id = ? and active = 1 or votes >= 100
+$user->posts()->where(function (Builder $query) {
+        return $query->where('active', 1)
+                     ->orWhere('votes', '>=', 100);
+    })->get(); // select * from posts where user_id = ? and (active = 1 or votes >= 100)
+
+// or you can access the query result as a property (lazy loading by default, will be loaded on first usage)
+$user = App\User::find(1);
+foreach ($user->posts as $post) { }
+
+// To query for relationship existance: has/doesntHave, whereHas/whereDoesntHave, whereHasMorph/whereDoesntHaveMorph
+// Retrieve all posts that have at least one comment...
+$posts = App\Post::has('comments')->get();
+// Retrieve all posts that have three or more comments...
+$posts = App\Post::has('comments', '>=', 3)->get();
+// Retrieve posts that have at least one comment with votes...
+$posts = App\Post::has('comments.votes')->get();
+// Retrieve posts with at least one comment containing words like foo%...
+$posts = App\Post::whereHas('comments', function (Builder $query) {
+    $query->where('content', 'like', 'foo%');
+})->get();
+// Retrieve posts with at least ten comments containing words like foo%...
+$posts = App\Post::whereHas('comments', function (Builder $query) {
+    $query->where('content', 'like', 'foo%');
+}, '>=', 10)->get();
+
+// to count the number of results from a relationship without actually loading them:
+$posts = App\Post::withCount('comments')->get();
+foreach ($posts as $post) {
+    echo $post->comments_count;
+}
+$posts = App\Post::withCount(['votes', 'comments' => function (Builder $query) {
+    $query->where('content', 'like', 'foo%');
+}])->get();
+echo $posts[0]->votes_count;
+echo $posts[0]->comments_count;
+$posts = App\Post::withCount([
+    'comments',
+    'comments as pending_comments_count' => function (Builder $query) {
+        $query->where('approved', false);
+    },
+])->get();
+echo $posts[0]->comments_count;
+echo $posts[0]->pending_comments_count;
+$posts = App\Post::select(['title', 'body'])->withCount('comments')->get();
+echo $posts[0]->title;
+echo $posts[0]->body;
+echo $posts[0]->comments_count;
+$book = App\Book::first();
+$book->loadCount('genres');
+$book->loadCount(['reviews' => function ($query) {
+    $query->where('rating', 5);
+}])
+```
+
+#### Eager loading
+
+* When accessing Eloquent relationships as properties, the relationship data is "lazy loaded". This means the relationship data is not actually loaded until you first access the property. However, Eloquent can "eager load" relationships at the time you query the parent model.
+
+```php
+// Eager loading is advised when you know in advance you will make use of a model relationship,
+// to avoid the "N+1 query problem", i.e.:
+$books = App\Book::all();
+foreach ($books as $book) {
+    echo $book->author->name; // this will execute a query for each book
+}
+// whereas with eager loading only 2 queries will be executed:
+$books = App\Book::with('author')->get(); // select * from books
+foreach ($books as $book) {
+    echo $book->author->name; // select * from authors where id in (1, 2, 3, 4, 5, ...)
+}
+
+// egear loading for multiple relationships:
+$books = App\Book::with(['author', 'publisher'])->get();
+// nested eager loading:
+$books = App\Book::with('author.contacts')->get();
+// eager load specific columns:
+$books = App\Book::with('author:id,name')->get();
+// nested morphTo eager loading:
+$activities = ActivityFeed::query()
+    ->with(['parentable' => function (MorphTo $morphTo) {
+        $morphTo->morphWith([
+            Event::class => ['calendar'],
+            Photo::class => ['tags'],
+            Post::class => ['author'],
+        ]);
+    }])->get();
+// costraining eager loads:
+$users = App\User::with(['posts' => function ($query) {
+    $query->where('title', 'like', '%first%');
+}])->get();
+$users = App\User::with(['posts' => function ($query) {
+    $query->orderBy('created_at', 'desc');
+}])->get();
+
+// lazy eager loading:
+$books = App\Book::all();
+if ($someCondition) {
+    $books->load('author', 'publisher');
+}
+$author->load(['books' => function ($query) {
+    $query->orderBy('published_date', 'asc');
+}]);
+// load only if not already loaded:
+$book->loadMissing('author');
+
+// nested eager loading in morphTo
+$activities = ActivityFeed::with('parentable')
+    ->get()
+    ->loadMorph('parentable', [
+        Event::class => ['calendar'],
+        Photo::class => ['tags'],
+        Post::class => ['author'],
+    ]);
+```
+
+### Insert relationship instances
+
+```php
+// Instead of manually setting the post_id attribute on the Comment, you can use save or saveMany:
+$comment = new App\Comment(['message' => 'A new comment.']);
+$post = App\Post::find(1);
+$post->comments()->save($comment); // will automatically add the appropriate post_id
+$post = App\Post::find(1);
+$post->comments()->saveMany([
+    new App\Comment(['message' => 'A new comment.']),
+    new App\Comment(['message' => 'Another comment.']),
+]);
+// create/createMany are the same as save/saveMany, but accept a php array instead of a model instance
+$post = App\Post::find(1);
+$comment = $post->comments()->create([
+    'message' => 'A new comment.',
+]);
+// If you would like to 'save' your model and all of its associated relationships, you may use "push"
+$post = App\Post::find(1);
+$post->comments[0]->message = 'Message';
+$post->comments[0]->author->name = 'Author Name';
+$post->push();
+$post = App\Post::find(1);
+$post->comments()->createMany([
+    [
+        'message' => 'A new comment.',
+    ],
+    [
+        'message' => 'Another new comment.',
+    ],
+]);
+// You may also use the findOrNew, firstOrNew, firstOrCreate and updateOrCreate methods to create and update models on relationships.
+
+// in belongsTo relationships
+// associate/dissociate will set/unset the foreign key on the child model
+$account = App\Account::find(10);
+$user->account()->associate($account);
+$user->save();
+$user->account()->dissociate();
+$user->save();
+App\User::find(1)->roles()->save($role, ['expires' => $expires]); // additional intermediate table values in many-to-many relationships
+
+// in many-to-many relationships
+// attach/detach will insert/remove an instance in the intermediate table, without affecting the two end models:
+$user = App\User::find(1);
+$user->roles()->attach($roleId);
+$user->roles()->attach($roleId, ['expires' => $expires]);
+$user->roles()->detach($roleId); // Detach a single role from the user...
+$user->roles()->detach(); // Detach all roles from the user...
+$user->roles()->detach([1, 2, 3]);
+$user->roles()->attach([
+    1 => ['expires' => $expires],
+    2 => ['expires' => $expires],
+]);
+// with sync, all ids that are not in the given array will be removed from the intermediate table
+$user->roles()->sync([1, 2, 3]);
+$user->roles()->sync([1 => ['expires' => true], 2, 3]); // add additional intermediate table values
+// if you don't want to detach the missing ids, use syncWithoutDetaching
+$user->roles()->syncWithoutDetaching([1, 2, 3]);
+// toggle will attach the id if missing from the intermediate table, and remove it if present
+$user->roles()->toggle([1, 2, 3]);
+// updateExistingPivot will update a value in the intermediate table 
+$user->roles()->updateExistingPivot($roleId, $attributes); // pivot record foreign key, attributes to update
+
+// When a model belongsTo or belongsToMany another model, such as a Comment which belongs to a Post,
+// it is sometimes helpful to update the parent's timestamp when the child model is updated
+// For example, when a Comment model is updated, you may want to automatically "touch" the updated_at timestamp of the owning Post
+// you can set the Comment to do that automatically by setting its touches property:
+protected $touches = ['post'];
 ```
 
 ## Model's custom query scopes
