@@ -656,6 +656,142 @@ $user->roles()->updateExistingPivot($roleId, $attributes); // pivot record forei
 protected $touches = ['post'];
 ```
 
+## Accessors and mutators
+
+* Essentially accessors and mutators are like getters and setters that apply a transformation on an attribute when it is inserted or retrieved from the database or compute an attribute using other attributes.
+    * e.g. you can apply encryption when you store a value and decrypt it when your retrieve it, or format a date
+    * you can return values obtained by combining other values (e.g. full name from first name and last name), etc. If you would like these computed values to be added to the array / JSON representations of your model, [you will need to append them](https://laravel.com/docs/6.x/eloquent-serialization#appending-values-to-json).
+* you just have to create a `getFooAttribute` or `setFooAttribute` (e.g. `getFirstNameAttribute` for a `first_name` attribute) which takes a `$value`, does something with it and then returns the computed value. Then, when you will access that as a model property, you will get (or set) the computed value.
+* Additional configurations and utilities are available for [dates](https://laravel.com/docs/6.x/eloquent-mutators#date-mutators), [attribute casting](https://laravel.com/docs/6.x/eloquent-mutators#attribute-casting) (e.g. to always convert a value to a boolean, even if it's stored as integer in the database), and [array/json casting](https://laravel.com/docs/6.x/eloquent-mutators#array-and-json-casting)
+
+```php
+class User extends Model
+{
+    // Accessor
+    public function getFirstNameAttribute($value)
+    {
+        return ucfirst($value);
+    }
+
+    // Mutator
+    public function setFirstNameAttribute($value)
+    {
+        $this->attributes['first_name'] = strtolower($value);
+    }
+
+    // Derived accessor
+    public function getFullNameAttribute()
+    {
+        // (if you want it to be added to array / json model representation you will need to append them)
+        return "{$this->first_name} {$this->last_name}";
+    }
+}
+
+// usage:
+$user = App\User::find(1);
+$firstName = $user->first_name;
+$user->first_name = 'Sally';
+```
+
+## API Resources
+
+* When building an API, you may need a transformation layer that sits between your Eloquent models and the JSON responses that are actually returned to your application's users. Laravel's resource classes allow you to expressively and easily transform your models and model collections into JSON.
+* To generate a resource class, you may use the `make:resource` Artisan command. By default, resources will be placed in `app/Http/Resources` 
+* Resource collections apply the same concepts on collections of model, giving also the possibility to add other meta information to the response. To create a resource collection, you should use the `--collection` flag when creating the resource. Or, including the word `Collection` in the resource name
+* [See docs](https://laravel.com/docs/6.x/eloquent-resources) for more (e.g. preserving collection keys, customizing the underlying resouce class, nested resources, pagination, data wrapping, conditional attributes, conditional relationships, adding meta-data, return the json resource while modifying the http response header, etc)
+* Laravel provides a handy 'Resource' code scaffolding for REST-API CRUD operations. 
+    * `php artisan make:controller PhotoController --resource` - will generate a controller with all CRUD methods stubbed, `Route::resource('photos', 'PhotoController');` creates multiple routes to handle actions on the resource. The generated controller will already have methods stubbed for each of these actions
+    * you can even bind a model to the resource 
+* [see more](https://laravel.com/docs/6.x/controllers#resource-controllers)
+
+```bash
+# Resource
+php artisan make:resource User
+# Resource collection
+php artisan make:resource Users --collection
+php artisan make:resource UserCollection
+```
+
+```php
+// Resource
+namespace App\Http\Resources;
+use Illuminate\Http\Resources\Json\JsonResource;
+class User extends JsonResource
+{
+    public function toArray($request)
+    {
+        return [
+            'id' => $this->id,
+            'name' => $this->name,
+            'email' => $this->email,
+            'created_at' => $this->created_at,
+            'updated_at' => $this->updated_at,
+        ];
+    }
+}
+
+// usage:
+use App\Http\Resources\User as UserResource;
+use App\User;
+Route::get('/user', function () {
+    return new UserResource(User::find(1));
+});
+Route::get('/user', function () {
+    return UserResource::collection(User::all()); // to add meta-data, use a collection class
+});
+
+// Resource collection
+namespace App\Http\Resources;
+use Illuminate\Http\Resources\Json\ResourceCollection;
+class UserCollection extends ResourceCollection
+{
+    public function toArray($request)
+    {
+        return [
+            'data' => $this->collection,
+            'links' => [
+                'self' => 'link-value',
+            ],
+        ];
+    }
+}
+
+// Usage:
+use App\Http\Resources\UserCollection;
+use App\User;
+Route::get('/users', function () {
+    return new UserCollection(User::all());
+});
+```
+
+## Model to array / json serialization
+
+* `toArray`/`toJson` converts a model (or an eloquent collection) and recursively all its relationships to a php array or to JSON
+    * `attributesToArray`/`attributesToJson` does the same but including only the model's attribute (no relationships)
+* `protected $hidden = ['password'];` in a model will exclude 'password' attribute from the serializations
+* `protected $visible = ['first_name', 'last_name'];` will make 'first_name' and 'last_name' the only attributes serialized
+* `return $user->makeVisible('attribute')->toArray();` and `return $user->makeHidden('attribute')->toArray();` will modify the visibility at runtime
+* [see docs](https://laravel.com/docs/6.x/eloquent-serialization) for more info (e.g. appending additional values at compile/run-time, date serialization, etc)
+
+```php
+// array serialization
+$user = App\User::with('roles')->first();
+return $user->toArray();
+return $user->attributesToArray();
+$users = App\User::all();
+return $users->toArray();
+
+// json serialization
+$user = App\User::find(1);
+return $user->toJson();
+return $user->toJson(JSON_PRETTY_PRINT);
+// casting a model or collection to string converts to json by default
+return (string) $user; 
+Route::get('users', function () {
+    return App\User::all(); // will return json
+});
+```
+
 ## Model's custom query scopes
 
 * Query scopes are a laravel api to add constraints to queries.
@@ -678,5 +814,54 @@ protected $touches = ['post'];
 
 * PHPUnit is included out of the box and a `phpunit.xml` file is already set up
     * Check `<server name="DB_CONNECTION" value="mysql"/>` and `<server name="DB_DATABASE" value="homestead"/>` are correct when testing a model or any database query: by default laravel sets a specific sqlite configuration as the default database for testing.
-* Tests inside `tests/Unit` and `tests/Feature` will be run when `phpunit` command is executed
+* Tests inside `tests/Unit` and `tests/Feature` will be run when `phpunit` command is executed 
 
+## Database seeding
+
+* Database seeders are classes, with a method `run`, that fill your database with test data and are located in `database/seeds`
+* `database/seeds/DatabaseSeeder` is the main class, defined by Laravel, which `run` method will be executed when executing `artisan db:seed` command. Here you can call, in your preferred order, any additional seeder class `run`, e.g. with `$this->call([ UsersTableSeeder::class, PostsTableSeeder::class, CommentsTableSeeder::class, ]);`
+* `php artisan make:seeder UsersTableSeeder` will create a new seeder class
+* inside the `run` method of any seeder, you can insert data into the database using query builder methods (i.e. "manually") or using an Eloquent model factory (see below)
+* in a test class extending `TestClass` you can call `$this->seed();` to run the main `DatabaseSeeder` or `$this->seed(OrderStatusesTableSeeder::class);` to run a specific seeder
+
+```bash
+# Create a seeder class
+artisan make:seeder UsersTableSeeder
+composer dump-autoload # necessary!
+
+# Execute DatabaseSeeder run method
+artisan make db:seed
+# Execute a specific seeder class run method
+artisan db:seed --class=UsersTableSeeder
+
+## Drop all tables, re-run all migrations and then seed:
+php artisan migrate:fresh --seed
+```
+
+```php
+class DatabaseSeeder extends Seeder
+{
+    public function run()
+    {
+        // Use query builder methods ("manual" insertion)
+        DB::table('users')->insert([
+            'name' => Str::random(10),
+            'email' => Str::random(10).'@gmail.com',
+            'password' => Hash::make('password'),
+        ]);
+
+        // Use a factory
+        factory(App\User::class, 50)->create()->each(function ($user) {
+            $user->posts()->save(factory(App\Post::class)->make());
+        });
+
+        // Call additional seeders
+        $this->call([
+            UsersTableSeeder::class,
+            PostsTableSeeder::class,
+            CommentsTableSeeder::class,
+        ]);
+    }
+}
+
+```
