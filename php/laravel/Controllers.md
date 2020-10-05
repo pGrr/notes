@@ -70,6 +70,9 @@ $action = Route::currentRouteAction();
 
 * you can envision middleware as a series of "layers" HTTP requests must pass through before they hit your application. Each layer can examine the request and even reject it entirely.
 * middleware classes are in `app/Http/Middleware` directory and Laravel provides several ones by default (e.g. `web`, `api`, `auth`, etc). 
+
+## Create a middleware
+
 * `artisan make:middleware CheckAge` will create a middleware class with scaffold code: in `handle` function you can use `$request` object and `$next` closure (which refers to the subsequent layers of the http request).
 
 ```bash
@@ -91,6 +94,8 @@ class CheckAge
     }
 }
 ```
+
+## Register and apply middlewares
 
 * `app/Http/Kernel.php` is the default class for middleware setup: you can register your middleware classes (e.g. `\App\Http\Middleware\CheckAge::class`) here. 
     * adding it to the `$middleware` array will make the middleware applied to all http requests
@@ -130,6 +135,8 @@ class UserController extends Controller
 }
 ```
 
+## Middleware parameters
+
 * you can add middleware parameters by adding additional arguments to the `handle` function, after the `$next` argument, and then you can pass those parameter during the middleware registration in a route:
 
 ```php
@@ -150,6 +157,8 @@ Route::put('post/{id}', function ($id) {
     //
 })->middleware('role:editor');
 ```
+
+## Add additional tasks after middleware (before response is sent to the browser)
 
 * the `terminate` method of the middleware class allows you to perform additional tasks after the response is sent to the browser
 
