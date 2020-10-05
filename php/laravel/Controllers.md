@@ -444,13 +444,13 @@ Route::put('user/{id}', 'UserController@update');
 * [See docs](https://laravel.com/docs/6.x/controllers#resource-controllers) for more.
 
 ```
-GET	        /photos	                index	    photos.index
-GET	        /photos/create	        create	    photos.create
-POST	    /photos	                store	    photos.store
-GET	        /photos/{photo}	        show	    photos.show
-GET	        /photos/{photo}/edit	edit	    photos.edit
-PUT/PATCH	/photos/{photo}	        update	    photos.update
-DELETE	    /photos/{photo}	        destroy	    photos.destroy
+GET	        /photos	                index	      photos.index
+GET	        /photos/create	         create	     photos.create
+POST	       /photos	                store	      photos.store
+GET	        /photos/{photo}	        show	       photos.show
+GET	        /photos/{photo}/edit	   edit	       photos.edit
+PUT/PATCH	  /photos/{photo}	        update	     photos.update
+DELETE	     /photos/{photo}	        destroy	    photos.destroy
 ```
 
 ```bash
@@ -490,9 +490,5 @@ Route::apiResources([
 ]);
 ```
 
-### Resource model
-
-    * you can even bind a model to the resource 
-* [see more](https://laravel.com/docs/6.x/controllers#resource-controllers)
 
 
