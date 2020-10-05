@@ -14,21 +14,7 @@ Route::get('/', function() {...});
 // Resolve route using controller@method
 Route::get('/', 'WelcomeController@index'); 
 
-// Parameters
-Route::get('posts/{post}/comments/{comment}', function ($postId, $commentId) {
-    //
-});
-Route::get('user/{name?}', function ($name = 'John') {
-    return $name;
-});
-Route::get('user/{id}/{name}', function ($id, $name) {
-    //
-})->where(['id' => '[0-9]+', 'name' => '[a-z]+']);
-Route::get('search/{search}', function ($search) {
-    return $search;
-})->where('search', '.*'); // allows search parameter to cointain '/'
-
-// Http verbs
+// ...using any of the Http verbs
 Route::get($uri, $callback);
 Route::post($uri, $callback);
 Route::put($uri, $callback);
@@ -37,12 +23,19 @@ Route::delete($uri, $callback);
 Route::options($uri, $callback);
 Route::match(['get', 'post'], '/', function () { });
 Route::any('/', function () { });
+```
 
-// Redirect shortcut
+## Redirects
+
+```php
 Route::redirect('/here', '/there'); // 302
 Route::redirect('/here', '/there', 301); // 301
 Route::permanentRedirect('/here', '/there'); // 301
+```
 
+## View-only routes
+
+```php
 // View only shortcut
 Route::view('/welcome', 'welcome');
 Route::view('/welcome', 'welcome', ['name' => 'Taylor']);
@@ -51,16 +44,66 @@ Route::view('/welcome', 'welcome', ['name' => 'Taylor']);
 Route::fallback(function () {
     // 404 (should be the last route registered)
 });
+```
 
+## Routes with parameters
+
+```php
+Route::get('posts/{post}/comments/{comment}', function ($postId, $commentId) { // required
+    //
+});
+Route::get('user/{name?}', function ($name = 'John') { // optional
+    return $name;
+});
+```
+
+### Parameters regex
+
+```php
+Route::get('user/{id}/{name}', function ($id, $name) {
+    //
+})->where(['id' => '[0-9]+', 'name' => '[a-z]+']); // regex
+
+Route::get('search/{search}', function ($search) {
+    return $search;
+})->where('search', '.*'); // allows search parameter to cointain '/'
+
+// ...or in RouteServiceProvider:
+public function boot()
+{
+    Route::pattern('id', '[0-9]+'); // globally and automatically applied
+    parent::boot();
+}
+// ...and then:
+Route::get('user/{id}', function ($id) {
+    // Only executed if {id} is numeric...
+});
+```
+
+## Route naming
+
+```php
 // Route naming
+Route::get('user/{id}/profile', function ($id) {
+    //
+})->name('profile');
 Route::get('user/profile', 'UserProfileController@show')->name('profile');
 $url = route('profile'); // Generating URLs...
 return redirect()->route('profile'); // Generating Redirects...
-$url = route('profile', ['id' => 1, 'photos' => 'yes']);
-// Additional parameters will result in a query string: /user/1/profile?photos=yes
-if ($request->route()->named('profile')) {} // check the route name from a route middleware 'handle' function
+$url = route('profile', ['id' => 1, 'photos' => 'yes']); // passing parameters
+// (Additional parameters will result in a query string: /user/1/profile?photos=yes)
 
 // Get route info
+// check the route name from a route middleware 'handle' function
+public function handle($request, Closure $next)
+{
+    if ($request->route()->named('profile')) {
+        //
+    }
+
+    return $next($request);
+}
+// Use the Route facade anywhere else
 $route = Route::current();
 $name = Route::currentRouteName();
 $action = Route::currentRouteAction();
