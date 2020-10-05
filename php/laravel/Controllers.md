@@ -443,15 +443,7 @@ Route::put('user/{id}', 'UserController@update');
 * Laravel provides a handy 'Resource' code scaffolding for REST-API CRUD operations:
 * [See docs](https://laravel.com/docs/6.x/controllers#resource-controllers) for more.
 
-```
-GET	        /photos	                index	      photos.index
-GET	        /photos/create	         create	     photos.create
-POST	       /photos	                store	      photos.store
-GET	        /photos/{photo}	        show	       photos.show
-GET	        /photos/{photo}/edit	   edit	       photos.edit
-PUT/PATCH	  /photos/{photo}	        update	     photos.update
-DELETE	     /photos/{photo}	        destroy	    photos.destroy
-```
+![](resourceactions.png)
 
 ```bash
 # will generate a controller with all CRUD methods stubbed,
