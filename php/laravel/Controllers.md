@@ -1,4 +1,3 @@
-
 # ROUTING
 
 * route files are located in `routes` directory and are automatically loaded by the framework.
@@ -25,6 +24,24 @@ Route::match(['get', 'post'], '/', function () { });
 Route::any('/', function () { });
 ```
 
+## Get route info
+
+```php
+// Use the Route facade 
+$route = Route::current();
+$name = Route::currentRouteName();
+$action = Route::currentRouteAction();
+
+// $request->route() in a route middleware 'handle' function
+public function handle($request, Closure $next)
+{
+    if ($request->route()->named('profile')) {
+        //
+    }
+    return $next($request);
+}
+```
+
 ## Redirects
 
 ```php
@@ -39,8 +56,14 @@ Route::permanentRedirect('/here', '/there'); // 301
 // View only shortcut
 Route::view('/welcome', 'welcome');
 Route::view('/welcome', 'welcome', ['name' => 'Taylor']);
+```
 
-// Fallback (404)
+## Fallback route (404)
+
+* Typically, unhandled requests will automatically render a "404" page via your application's exception handler. However, since you may define the fallback route within your routes/web.php file, all middleware in the web middleware group will apply to the route. You are free to add additional middleware to this route as needed:
+
+```php
+// in web routes file:
 Route::fallback(function () {
     // 404 (should be the last route registered)
 });
@@ -83,30 +106,124 @@ Route::get('user/{id}', function ($id) {
 ## Route naming
 
 ```php
-// Route naming
-Route::get('user/{id}/profile', function ($id) {
-    //
-})->name('profile');
+Route::get('user/{id}/profile', function ($id) { })->name('profile');
 Route::get('user/profile', 'UserProfileController@show')->name('profile');
 $url = route('profile'); // Generating URLs...
 return redirect()->route('profile'); // Generating Redirects...
 $url = route('profile', ['id' => 1, 'photos' => 'yes']); // passing parameters
 // (Additional parameters will result in a query string: /user/1/profile?photos=yes)
+```
 
-// Get route info
-// check the route name from a route middleware 'handle' function
-public function handle($request, Closure $next)
-{
-    if ($request->route()->named('profile')) {
+## Route grouping (middlewares, namespaces, subdomains, etc)
+
+```php
+// Middleware
+Route::middleware(['first', 'second'])->group(function () {
+    Route::get('/', function () {
+        // Uses first & second Middleware
+    });
+
+    Route::get('user/profile', function () {
+        // Uses first & second Middleware
+    });
+});
+
+// Namespaces
+Route::namespace('Admin')->group(function () {
+    // Controllers Within The "App\Http\Controllers\Admin" Namespace
+});
+
+// Subdomains
+Route::domain('{account}.myapp.com')->group(function () {
+    Route::get('user/{id}', function ($account, $id) {
         //
-    }
+    });
+});
 
-    return $next($request);
+// Prefix the URI of each route in the group
+Route::prefix('admin')->group(function () {
+    Route::get('users', function () {
+        // Matches The "/admin/users" URL
+    });
+});
+
+// Prefix the name of each route in the group
+Route::name('admin.')->group(function () {
+    Route::get('users', function () {
+        // Route assigned name "admin.users"...
+    })->name('users');
+});
+```
+
+## Route - model binding
+
+* If you type-hint the route callback (or the controller constructor/method) by specifying an eloquent model class as parameter, Laravel will try to automatically fetch the model instance with an id equal to the related parameter of the URI. If it can find it, it will inject the instance to the route handler (i.e. the callback or the controller class/method), else it will generate a 404 response.
+
+```php
+// default route-model binding
+Route::get('api/users/{user}', function (App\User $user) {
+    return $user->email;
+});
+
+// to use a database column other than id when retrieving a given model class, you may override the getRouteKeyName method on the Eloquent model:
+public function getRouteKeyName()
+{
+    return 'slug';
 }
-// Use the Route facade anywhere else
-$route = Route::current();
-$name = Route::currentRouteName();
-$action = Route::currentRouteAction();
+
+// to customize the resolution logic override the resolveRouteBinding method of your eloquent model:
+public function resolveRouteBinding($value)
+{
+    return $this->where('name', $value)->firstOrFail();
+}
+```
+
+## Routes rate limiting
+
+* Laravel includes a middleware to rate limit access to routes within your application. 
+* The `throttle` middleware accepts two parameters that determine the maximum number of requests that can be made in a given number of minutes. 
+
+```php
+// An authenticated user may access the route 60 times per minute
+Route::middleware('auth:api', 'throttle:60,1')->group(function () {
+    Route::get('/user', function () {
+        // 
+    });
+});
+
+// An authenticated user may access the route rate_limit times per minute,
+// where rate_limit is a User model's attribute
+Route::middleware('auth:api', 'throttle:rate_limit,1')->group(function () {
+    Route::get('/user', function () {
+        //
+    });
+});
+
+// 10 requests per minute for guests and 60 for authenticated users:
+Route::middleware('throttle:10|60,1')->group(function () {
+    //
+});
+// 10 requests for guests and rate_limit for authenticated users:
+// where rate_limit is a User model's attribute
+Route::middleware('auth:api', 'throttle:10|rate_limit,1')->group(function () {
+    Route::get('/user', function () {
+        //
+    });
+});
+
+// Different rate limits for different segments of the API:
+Route::middleware('auth:api')->group(function () {
+    Route::middleware('throttle:60,1,default')->group(function () {
+        Route::get('/servers', function () {
+            //
+        });
+    });
+    Route::middleware('throttle:60,1,deletes')->group(function () {
+        Route::delete('/servers/{id}', function () {
+            //
+        });
+    });
+});
 ```
 
 # MIDDLEWARE
