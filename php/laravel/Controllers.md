@@ -482,5 +482,155 @@ Route::apiResources([
 ]);
 ```
 
+# REQUESTS 
+
+* To obtain an instance of the current HTTP request via dependency injection, you should type-hint the `Illuminate\Http\Request` class on your controller method. The incoming request instance will automatically be injected by the service container. Then you can use all of its provided methods.
+
+```php
+Route::put('user/{id}', 'UserController@update');
+
+namespace App\Http\Controllers;
+use Illuminate\Http\Request;
+
+class UserController extends Controller
+{
+    // inject the Request in the controller's method
+    public function update(Request $request, $id)
+    {
+        // path
+        $uri = $request->path();
+        if ($request->is('admin/*')) { }
+        $url = $request->url(); // Without Query String
+        $url = $request->fullUrl(); // With Query String
+        
+        // method
+        $method = $request->method();
+        if ($request->isMethod('post')) { }
+
+        // inputs
+        $input = $request->all(); // all input data as array
+        $name = $request->input('name'); // specific input
+        $name = $request->input('name', 'Sally'); // specific input with default value
+        $name = $request->input('products.0.name'); // access input from forms that contain arrays
+        $names = $request->input('products.*.name');
+        $input = $request->input(); // all input values as associative array
+        $name = $request->query('name'); // input from the query string only
+        $name = $request->query('name', 'Helen');
+        $query = $request->query(); // all query string input as associative array
+
+        // you can also use dynamic properties: will look the payload first and then the route parameters
+        $name = $request->name;
+
+        // you can dig into json input (as long as the header type is application/json)
+        $name = $request->input('user.name');
+
+        // boolean returns true for 1, "1", true, "true", "on", and "yes"
+        $archived = $request->boolean('archived'); 
+
+        // retrieve only a subset of the input
+        $input = $request->only(['username', 'password']);
+        $input = $request->only('username', 'password');
+        $input = $request->except(['credit_card']);
+        $input = $request->except('credit_card');
+
+        // value presence 
+        if ($request->has('name')) { }
+        if ($request->has(['name', 'email'])) { }
+        if ($request->hasAny(['name', 'email'])) { }
+        if ($request->filled('name')) { } // present and not empty
+        if ($request->missing('name')) { } // check if absent
+    }
+}
+
+// ...or inject the request in the route closure:
+public function update(Request $request, $id)
+{
+    //
+}
+```
+
+## Old request input (e.g. for former form's input)
+
+* Laravel allows you to keep input from one request during the next request. This feature is particularly useful for re-populating forms after detecting validation errors. However, if you are using Laravel's included validation features, it is unlikely you will need to manually use these methods
+
+```php
+// flash the current input to the session so that it is available during the user's next request to the application:
+$request->flash();
+$request->flashOnly(['username', 'email']);
+$request->flashExcept('password');
+
+// you can chain input flashing with a redirect
+return redirect('form')->withInput();
+return redirect('form')->withInput(
+    $request->except('password')
+);
+
+// then you can access old input with
+$username = $request->old('username');
+```
+```html
+<!-- or with the global helper 'old', e.g. in a blade template -->
+<input type="text" name="username" value="{{ old('username') }}">
+```
+
+## Cookies
+
+* All cookies created by the Laravel framework are encrypted and signed with an authentication code, meaning they will be considered invalid if they have been changed by the client.  
+
+```php
+// Retrieve a cookie from the request
+$value = $request->cookie('name');
+
+// ...or using the facade
+use Illuminate\Support\Facades\Cookie;
+$value = Cookie::get('name'); 
+
+// Create a cookie (needs to be attached to a response)
+$cookie = cookie('name', 'value', $minutes);
+return response('Hello World')->cookie($cookie);
+
+// Attach a cookie to the response
+return response('Hello World')->cookie(
+    'name', 'value', $minutes
+);
+return response('Hello World')->cookie(
+    'name', 'value', $minutes, $path, $domain, $secure, $httpOnly
+);
+
+// "queue" cookies for attachment to the outgoing response
+Cookie::queue(Cookie::make('name', 'value', $minutes));
+Cookie::queue('name', 'value', $minutes);
+```
+
+## Files
+
+* For more methods, [see api docs](https://api.symfony.com/3.0/Symfony/Component/HttpFoundation/File/UploadedFile.html)
+
+```php
+$file = $request->file('photo');
+$file = $request->photo;
+if ($request->hasFile('photo')) { }
+if ($request->file('photo')->isValid()) { }
+$path = $request->photo->path();
+$extension = $request->photo->extension();
+```
+
+### Storing uploaded files
+
+* To store an uploaded file, you will typically use one of your configured filesystems. The UploadedFile class has a store method which will move an uploaded file to one of your disks, which may be a location on your local filesystem or even a cloud storage location like Amazon S3.
+* The store method accepts the path where the file should be stored relative to the filesystem's configured root directory. This path should not contain a file name, since a unique ID will automatically be generated to serve as the file name.
+* The store method also accepts an optional second argument for the name of the disk that should be used to store the file. The method will return the path of the file relative to the disk's root:
+
+```php
+$path = $request->photo->store('images');
+$path = $request->photo->store('images', 's3');
+$path = $request->photo->storeAs('images', 'filename.jpg');
+$path = $request->photo->storeAs('images', 'filename.jpg', 's3');
+```
+
+### Configuring trusted proxies
+
+* When running your applications behind a load balancer that terminates TLS / SSL certificates, you may notice your application sometimes does not generate HTTPS links. Typically this is because your application is being forwarded traffic from your load balancer on port 80 and does not know it should generate secure links.
+* [see docs](https://laravel.com/docs/6.x/requests#configuring-trusted-proxies) for more info
 
 
