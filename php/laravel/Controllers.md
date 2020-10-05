@@ -178,6 +178,17 @@ public function resolveRouteBinding($value)
 }
 ```
 
+## Routes caching
+
+* If your application is exclusively using controller based routes (not route closures!), you should take advantage of Laravel's route cache. Using the route cache will drastically decrease the amount of time it takes to register all of your application's routes. In some cases, your route registration may even be up to 100x faster.
+* After running `artisan route:cache` command, your cached routes file will be loaded on every request. 
+* Remember, if you add any new routes you will need to generate a fresh route cache.
+
+```bash
+php artisan route:cache
+php artisan route:clear
+```
+
 ## Routes rate limiting
 
 * Laravel includes a middleware to rate limit access to routes within your application. 
@@ -339,30 +350,149 @@ class StartSession
 
 # CONTROLLERS
 
-* Instead of defining all of your request handling logic as Closures in route files, you may wish to organize this behavior using Controller classes. Controllers can group related request handling logic into a single class
-* Controllers are in `app/Http/Controllers` 
-* You can create a controller with `artisan make:controller UserController` will create a controller: since it extdends from the base controller class you have methods such as `middleware`, `validate`, `dispatch`, etc. Then you associate a route to a controller with `Route::get('user/{id}', 'UserController@show');`. The route parameters will also be passed to the method.
-* you can assign middleware in controller's constructor:
+* Controllers incapsulates request handling logic 
+* Controllers are located in `app/Http/Controllers` 
+* The Controller base class provides useful methods such as `middleware`, `validate`, `dispatch`, etc
 
-```php
-public function __construct()
-{
-    $this->middleware('auth');
-    $this->middleware('log')->only('index');
-    $this->middleware('subscribed')->except('store');
-    $this->middleware(function ($request, $next) {
-	// you can use a closure, without defining an entire middleware class
-	return $next($request);
-    });
-}
+## Create a Controller
+
+```bash
+artisan make:controller UserController
 ```
 
-* if you type-hint a controller constructor or method's arguments the Service Container will resolve it automatically (You may also type-hint any Laravel contract. If the container can resolve it, you can type-hint it)
+```php
+namespace App\Http\Controllers;
+use App\Http\Controllers\Controller;
+use App\User;
 
-## Laravel "resources"
+class UserController extends Controller
+{
+    public function __construct()
+    {
+        // you can assign middlewares in the constructor:
+        $this->middleware('auth');
+        $this->middleware('log')->only('index');
+        $this->middleware('subscribed')->except('store');
+        $this->middleware(function ($request, $next) {
+        // you can use a closure, without defining an entire middleware class
+        return $next($request);
+        });
+    }
 
-* Laravel provides a handy 'Resource' code scaffolding for REST-API CRUD operations. 
-    * `php artisan make:controller PhotoController --resource` - will generate a controller with all CRUD methods stubbed, `Route::resource('photos', 'PhotoController');` creates multiple routes to handle actions on the resource. The generated controller will already have methods stubbed for each of these actions
+    public function show($id)
+    {
+        return view('user.profile', ['user' => User::findOrFail($id)]);
+    }
+}
+
+// Associate a route with a controller:
+Route::get('user/{id}', 'UserController@show'); // route parameter id will be passed to the controller
+// If you choose to nest your controllers deeper into the App\Http\Controllers directory,
+//  use the specific class name relative to the App\Http\Controllers root namespace.
+Route::get('foo', 'Photos\AdminController@method'); // App\Http\Controllers\Photos\AdminController
+```
+
+## Single action controllers
+
+```bash
+php artisan make:controller ShowProfile --invokable
+```
+
+```php
+class ShowProfile extends Controller
+{
+    public function __invoke($id)
+    {
+        return view('user.profile', ['user' => User::findOrFail($id)]);
+    }
+}
+
+// Route association without method:
+Route::get('user/{id}', 'ShowProfile');
+```
+
+## Controllers dependency injection
+
+* if you type-hint a controller constructor or method providing typed arguments that the Service Container is able to resolve, they will be automatically injected in the controller (or method). You may also type-hint any Laravel contract. If the container can resolve it, you can type-hint it.
+
+```php
+class UserController extends Controller
+{
+    protected $users;
+
+    public function __construct(UserRepository $users) // users injection
+    {
+        $this->users = $users;
+    }
+
+    public function update(Request $request) // request injection, id extracted from route
+    {
+        $name = $request->name;
+        //
+    }
+}
+
+// users will be automatically injected in the constructor, id will be extracted from the URI and passed to the method
+// request will be automatically injected into the update method
+// id will be extracted from the URI and passed to the update method
+Route::put('user/{id}', 'UserController@update'); 
+```
+
+## Resource Controllers 
+
+* Laravel provides a handy 'Resource' code scaffolding for REST-API CRUD operations:
+* [See docs](https://laravel.com/docs/6.x/controllers#resource-controllers) for more.
+
+```
+GET	        /photos	                index	    photos.index
+GET	        /photos/create	        create	    photos.create
+POST	    /photos	                store	    photos.store
+GET	        /photos/{photo}	        show	    photos.show
+GET	        /photos/{photo}/edit	edit	    photos.edit
+PUT/PATCH	/photos/{photo}	        update	    photos.update
+DELETE	    /photos/{photo}	        destroy	    photos.destroy
+```
+
+```bash
+# will generate a controller with all CRUD methods stubbed,
+php artisan make:controller PhotoController --resource
+
+# type hints a given model to each of these methods
+# (e.g. if you are using route model binding)
+php artisan make:controller PhotoController --resource --model=Photo
+
+# Will exclude 'create' and 'edit' (which is common for apis)
+php artisan make:controller API/PhotoController --api
+```
+
+```php
+// creates multiple routes to handle actions on the resource 
+// (which correspond to the generated controller method stubs)
+Route::resource('photos', 'PhotoController');
+Route::resources([
+    'photos' => 'PhotoController',
+    'posts' => 'PostController'
+]);
+
+// you can specify a subset of actions:
+Route::resource('photos', 'PhotoController')->only([
+    'index', 'show'
+]);
+Route::resource('photos', 'PhotoController')->except([
+    'create', 'store', 'update', 'destroy'
+]);
+
+// Will exclude 'create' and 'edit' (which is common for apis)
+Route::apiResource('photos', 'PhotoController');
+Route::apiResources([
+    'photos' => 'PhotoController',
+    'posts' => 'PostController'
+]);
+```
+
+### Resource model
+
     * you can even bind a model to the resource 
 * [see more](https://laravel.com/docs/6.x/controllers#resource-controllers)
+
 
