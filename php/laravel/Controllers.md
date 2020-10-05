@@ -72,6 +72,10 @@ $action = Route::currentRouteAction();
 * middleware classes are in `app/Http/Middleware` directory and Laravel provides several ones by default (e.g. `web`, `api`, `auth`, etc). 
 * `artisan make:middleware CheckAge` will create a middleware class with scaffold code: in `handle` function you can use `$request` object and `$next` closure (which refers to the subsequent layers of the http request).
 
+```bash
+artisan make:middleware CheckAge
+```
+
 ```php
 namespace App\Http\Middleware;
 use Closure;
@@ -88,12 +92,29 @@ class CheckAge
 }
 ```
 
-`app/Http/Kernel.php` is the default class for middleware setup: you can register your middleware classes (e.g. `\App\Http\Middleware\CheckAge::class`) here. 
-
+* `app/Http/Kernel.php` is the default class for middleware setup: you can register your middleware classes (e.g. `\App\Http\Middleware\CheckAge::class`) here. 
     * adding it to the `$middleware` array will make the middleware applied to all http requests
-    * adding a `'name' => \App\Http\Middleware\CheckAge::class` in the `$routeMiddleware` associative array will register a named middleware which you can apply in route definitions or in controller classes (or methods):
+    * adding a `'name' => \App\Http\Middleware\CheckAge::class` in the `$routeMiddleware` associative array will register a named middleware which you can apply in route definitions or in controller classes (or methods)
+    * adding a `'name' => [ \App\Http\Middleware\MyMiddleware1::class, ... ]` in the `$middlewareGroups` will register a named group of middlewares which you can apply all at once in route definitions or in controller classes (or methods)
+    * you can assing an order to the non-global middlewares in the `$middlewarePriority` array
 
 ```php
+// Register a middleware in a route:
+Route::get('profile', 'UserController@show')->middleware('auth');
+Route::get('/', function () {
+    //
+})->middleware('first', 'second'); 
+Route::get('admin/profile', function () {
+    //
+})->middleware(CheckAge::class); // you may also pass the fully qualified class name
+Route::get('/', function () {
+    //
+})->middleware('web'); // web refers a group of middleware
+// assign the middlewares to a group of routes
+Route::group(['middleware' => ['web']], function () { });
+Route::middleware(['web', 'subscribed'])->group(function () { }); 
+
+// Register a middleware in a controller (constructor or method):
 class UserController extends Controller
 {
     public function __construct()
@@ -109,35 +130,40 @@ class UserController extends Controller
 }
 ```
 
-    * inside a controller class constructor, for the entire class or for some of its methods with `$this->middleware('auth');` or `$this->middleware('log')->only('index');`, or `$this->middleware('subscribed')->except('store');`, or with a closure: `$this->middleware(function ($request, $next) { ...;  return $next($request); });`
-* you can define middleware groups to add them all at once by specifying the group name instead of the single middleware name, by registering the group in the `$middlewareGroups` property 
-* you can assing an order to the middlegroup with the `$middlewarePriority` array
-* you can add middleware parameters by adding additional arguments to the `handle` function, after the `$next` argument, and then you can pass those parameter during the middleware registration in a route, by separating middleware name and parameters by a comma, e.g. `Route::put('post/{id}', function ($id) {})->middleware('role:editor');`
-* the `terminate` method of the middleware class allows you to perform additional tasks after the response is sent to the browser
-
-```bash
-artisan make:middleware CheckAge
-```
+* you can add middleware parameters by adding additional arguments to the `handle` function, after the `$next` argument, and then you can pass those parameter during the middleware registration in a route:
 
 ```php
-namespace App\Http\Middleware;
-use Closure;
-
-class CheckAge
+// you can assign additional parameters after $next
+class CheckRole
 {
-    /**
-     * Handle an incoming request.
-     *
-     * @param  \Illuminate\Http\Request  $request
-     * @param  \Closure  $next
-     * @return mixed
-     */
+    public function handle($request, Closure $next, $role) 
+    {
+        if (! $request->user()->hasRole($role)) {
+            // Redirect...
+        }
+        return $next($request);
+    }
+}
+
+// ...then you can pass parameters during middleware registration with 'name:par1:par2:...' syntax
+Route::put('post/{id}', function ($id) {
+    //
+})->middleware('role:editor');
+```
+
+* the `terminate` method of the middleware class allows you to perform additional tasks after the response is sent to the browser
+
+```php
+class StartSession
+{
     public function handle($request, Closure $next)
     {
-        if ($request->age <= 200) {
-            return redirect('home');
-        }
-        return $next($request); // pass the request deeper into the application
+        return $next($request);
+    }
+
+    public function terminate($request, $response)
+    {
+        // Store the session data...
     }
 }
 ```
