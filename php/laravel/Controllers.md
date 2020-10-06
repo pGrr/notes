@@ -633,4 +633,137 @@ $path = $request->photo->storeAs('images', 'filename.jpg', 's3');
 * When running your applications behind a load balancer that terminates TLS / SSL certificates, you may notice your application sometimes does not generate HTTPS links. Typically this is because your application is being forwarded traffic from your load balancer on port 80 and does not know it should generate secure links.
 * [see docs](https://laravel.com/docs/6.x/requests#configuring-trusted-proxies) for more info
 
+# RESPONSES
+
+* All routes and controllers should return a response. Laravel provides several ways to return responses:
+    * Automatic conversions
+        * Strings will be converted to a full http response
+        * PHP arrays will be converted to json text (so, for an api, you can just return the php array)
+    * Views to render the html
+    * Laravel response objects allow you to customize the http headers, attach a cookie, force a file download, return json (with type 'application/json', etc)
+    * Laravel redirects allow to redirect to a url, to go back with input (e.g. for forms), redirect to external domains, etc
+
+```php
+// automatic conversions
+Route::get('/', function () {
+    return 'Hello World'; // automatically converts the string to a full http response
+});
+Route::get('/', function () {
+    return [1, 2, 3]; // automatically converts to json
+});
+
+// json
+// json_encode and set the Content-Type header to application/json
+return response()->json([ 
+    'name' => 'Abigail',
+    'state' => 'CA'
+]);
+// jsonp response
+return response()
+            ->json(['name' => 'Abigail', 'state' => 'CA'])
+            ->withCallback($request->input('callback'));
+
+// customize headers
+return response('Hello World', 200)
+                  ->header('Content-Type', 'text/plain');
+return response($content)
+            ->header('Content-Type', $type)
+            ->header('X-Header-One', 'Header Value')
+            ->header('X-Header-Two', 'Header Value');
+return response($content)
+            ->withHeaders([
+                'Content-Type' => $type,
+                'X-Header-One' => 'Header Value',
+                'X-Header-Two' => 'Header Value',
+            ]);
+return response()
+            ->view('hello', $data, 200)
+            ->header('Content-Type', $type);
+// (if you don't have to customize the header, you might as well 'return view(...);'
+
+// attach a cookie
+return response($content)
+                ->header('Content-Type', $type)
+                ->cookie('name', 'value', $minutes);
+return response($content)
+                ->header('Content-Type', $type)
+                ->cookie($name, $value, $minutes, $path, $domain, $secure, $httpOnly);
+Cookie::queue(Cookie::make('name', 'value', $minutes)); // queue cookie for outgoing response
+Cookie::queue('name', 'value', $minutes);
+
+// Redirects
+Route::get('dashboard', function () {
+    return redirect('home/dashboard'); // go to url
+});
+Route::post('user/profile', function () {
+    // Validate the request...
+    return back()->withInput(); // go back with input
+});
+return redirect()->route('login'); // to named routes
+return redirect()->route('profile', ['id' => 1]); // with parameters
+return redirect()->route('profile', [$user]); // profile/{id} 
+return redirect()->action('HomeController@index'); // to controller
+return redirect()->action( 'UserController@profile', ['id' => 1]); // with parameters
+
+// to external domains
+return redirect()->away('https://www.google.com');
+
+// File download
+return response()->download($pathToFile);
+return response()->download($pathToFile, $name, $headers);
+return response()->download($pathToFile)->deleteFileAfterSend();
+return response()->streamDownload(function () {
+    echo GitHub::api('repo')
+                ->contents()
+                ->readme('laravel', 'laravel')['contents'];
+}, 'laravel-readme.md');
+
+// display a file in user browser (no download)
+return response()->file($pathToFile);
+return response()->file($pathToFile, $headers);
+```
+
+## Flashing session data
+
+* Flashing sessions data allows to "flash" some data into the session for one response only, then the data will be deleted (e.g. after performing an action, to give a success or failure message):
+
+```php
+Route::post('user/profile', function () {
+    // Update the user's profile...
+    return redirect('dashboard')->with('status', 'Profile updated!');
+});
+```
+```html
+@if (session('status'))
+    <div class="alert alert-success">
+        {{ session('status') }}
+    </div>
+@endif
+```
+
+## Response macro (re-usable named responses)
+
+* If you would like to define a custom response that you can re-use in a variety of your routes and controllers, you may use the macro method on the Response facade. For example, from a service provider's boot method:
+
+```php
+namespace App\Providers;
+
+use Illuminate\Support\Facades\Response;
+use Illuminate\Support\ServiceProvider;
+
+class ResponseMacroServiceProvider extends ServiceProvider
+{
+    public function boot()
+    {
+        Response::macro('caps', function ($value) {
+            return Response::make(strtoupper($value));
+        });
+    }
+}
+
+// ...and then:
+return response()->caps('foo');
+```    
+
+
 
