@@ -242,7 +242,7 @@ export default {
   * if your store file gets too big you should start **splitting into separate files**, e.g. `actions.js`, `mutations.js` and `getters.js` into separate files with an `index.js` file importing them
   * For any non-trivial app, you should use **MODULES**
   
-Here's an example project structure leveraging both **file splitting** and **modules**:
+Here's an example project structure leveraging both **file splitting** and **modules**: 
 
 ```text
 ├── index.html
