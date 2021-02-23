@@ -44,13 +44,18 @@
 * The store is basically **a container that holds your application state**. There are two things that make a Vuex store different from a plain global object:
   * **Vuex stores are reactive**. When Vue components retrieve state from it, they will reactively and efficiently update if the store's state changes
   * **You cannot directly mutate the store's state. The only way to change a store's state is by explicitly committing mutations**. This ensures every state change leaves a track-able record, and enables tooling that helps us better understand our applications, e.g. log every mutation, take state snapshots, or even perform time travel debugging
+  * Using store state in a component simply involves returning the state within a computed property, because the store state is reactive. Triggering changes simply means committing mutations in component methods.
+
+## Store declaration and injection
 
 ```js
+// ROOT COMPONENT
 import Vue from 'vue'
 import Vuex from 'vuex'
 
-Vue.use(Vuex)
+Vue.use(Vuex) // enables the injecting of the store into child components
 
+// STORE DECLARATION
 const store = new Vuex.Store({
   state: {
     count: 0
@@ -62,23 +67,173 @@ const store = new Vuex.Store({
   }
 })
 
-// ...and then:
+// Store usage in the root component example
 store.commit('increment') // change the state commiting a mutation
 console.log(store.state.count) // retrieve and use the state
 
-// By declaring a store into a component:
-new Vue({
+// Declaring the store into a Vue component 
+// will inject the store into all it's child components 
+// thus making it accessible for them with this.$store
+const app = new Vue({
   el: '#app',
-  store // es6 syntax for store: store
+  // provide the store using the "store" option.
+  // this will inject the store instance to all child components.
+  store, // es6 syntax for store: store
+  components: { Counter },
+  template: `
+    <div class="app">
+      <counter></counter>
+    </div>
+  `
 })
+```
 
-// ...you can then access the store inside the component with this.$store
-methods: {
-  increment() {
-    this.$store.commit('increment')
-    console.log(this.$store.state.count)
+## Storage usage in child components
+
+```js
+// CHILD COMPONENTS
+// if the store was declared in the app, you can then access the store inside any sub-component with this.$store
+const Counter = {
+  template: `<div>{{ count }}</div>`,
+  // Use a computed property to return the state
+  computed: {
+    count () {
+      return this.$store.state.count
+    }
+  },
+  // commit a mutation to change the store state
+  // (it is required, directly changing the store state
+  //  should be avoided)
+  methods: {
+    increment() {
+      this.$store.commit('increment')
+      console.log(this.$store.state.count)
+    }
   }
 }
+```
+
+### Use mapState to simplify computed properties declaration
+
+```js
+// When a component needs to use many store properties declaring all these computed properties can get verbose. Use the the mapState helper instead:
+
+import { mapState } from 'vuex'
+
+export default {
+  // ...
+  computed: mapState({
+    // arrow functions can make the code very succinct!
+    count: state => state.count,
+
+    // passing the string value 'count' is same as `state => state.count`
+    countAlias: 'count',
+
+    // to access local state with `this`, a normal function must be used
+    countPlusLocalState (state) {
+      return state.count + this.localCount
+    }
+  })
+}
+```
+
+```js
+// We can also pass a string array to mapState when the name of a mapped
+// computed property is the same as a state sub tree name
+computed: mapState([
+  // map this.count to store.state.count
+  'count'
+])
+```
+
+```js
+// mapState returns an object. If you have other local computed properties other than mapstate's, use the object spread operator to merge the object returned by mapstate and the one containing other computed properties:
+computed: {
+  localComputed () { /* ... */ },
+  // mix this into the outer object with the object spread operator
+  ...mapState({
+    // ...
+  })
+}
+```
+
+# GETTERS
+
+* Vuex allows us to define "getters" in the store. You can think of them as computed properties for stores. Like computed properties, a getter's result is cached based on its dependencies, and will only re-evaluate when some of its dependencies have changed. (note: this doesn't apply if you return a function, see the example)
+
+```js
+// GETTERS DEFINITION INSIDE THE STORE
+const store = new Vuex.Store({
+  state: {
+    todos: [
+      { id: 1, text: '...', done: true },
+      { id: 2, text: '...', done: false }
+    ]
+  },
+  getters: {
+    // Getters will receive the state as their 1st argument
+    doneTodos: state => {
+      return state.todos.filter(todo => todo.done)
+    }
+    // ...and can receive other getters as second argument:
+    doneTodosCount: (state, getters) => {
+      return getters.doneTodos.length
+    }
+    // ...and you can return a function to add query arguments, though this way the method method will run each time you call it, 
+    // and the result is not cached:
+    getTodoById: (state) => (id) => {
+      return state.todos.find(todo => todo.id === id)
+    }
+  }
+})
+```
+
+```js
+// USAGE OF GETTERS INSIDE COMPONENTS
+store.getters.doneTodos // -> [{ id: 1, text: '...', done: true }]
+store.getters.doneTodosCount // -> 1
+// inside a sub-component:
+computed: {
+  doneTodosCount () {
+    // you can access getters value as properties
+    // (results are cached and managed by Vue's reactivity system)
+    return this.$store.getters.doneTodosCount
+  },
+  getTodoById: (state) => (id) => {
+    // getters defined as methods will run each time you call them, 
+    // and the result is not cached:
+    return state.todos.find(todo => todo.id === id)
+  }
+}
+```
+
+```js
+store.getters.getTodoById(2) // -> { id: 2, text: '...', done: false }
+```
+
+## Use mapGetters to simplify mapping store getters to a component computed properties
+
+```js
+import { mapGetters } from 'vuex'
+
+export default {
+  // ...
+  computed: {
+    // mix the getters into computed with object spread operator
+    ...mapGetters([
+      'doneTodosCount',
+      'anotherGetter',
+      // ...
+    ])
+  }
+}
+```
+
+```js
+...mapGetters({
+  // map `this.doneCount` to `this.$store.getters.doneTodosCount`
+  doneCount: 'doneTodosCount'
+})
 ```
 
 # APPLICATION STRUCTURE AND STORE FILE SPLITTING
