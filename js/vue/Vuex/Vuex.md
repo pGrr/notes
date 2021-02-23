@@ -236,6 +236,132 @@ export default {
 })
 ```
 
+# MUTATIONS
+
+* **The only way to actually change state in a Vuex store is by committing a mutation**
+* Vuex mutations are **very similar to events: each mutation has a string type and a handler**. 
+  * **The handler will receive the state as the first argument** and is where we perform actual state modifications
+  * **You cannot directly call the handler**. Think of it more like event registration: when the event is triggered, the handler will be called. So you need to trigger the "event", i.e. **to invoke a mutation handler, you need to `store.commit(type)`**
+* **MUTATIONS MUST BE SYNCHRONOUS**: this is for them to be trackable by the devtools and thus more deterministic and debuggable
+  * it is impossible to know when an asynch function's callback will be called, so any mutation performed in a callback is essentially un-trackable!
+  * when you call two methods both with async callbacks that mutate the state, how do you know when they are called and which callback was called first? 
+
+#
+
+```js
+// MUTATIONS DECLARATION IN THE STORE
+const store = new Vuex.Store({
+  state: {
+    count: 1
+  },
+  mutations: {
+    increment (state) { // es6 syntax for increment: function(state) {...}
+      // mutate state
+      state.count++
+    }
+  }
+})
+```
+
+```js
+// MUTATIONS COMMIT IN A COMPONENT
+store.commit('increment')
+```
+
+## Mutations with payload (i.e. additional arguments)
+
+* You can add arguments (e.g. the "payload") to the mutation after the state
+
+```js
+// Declaration in the store:
+mutations: {
+  increment (state, n) {
+    state.count += n
+  }
+}
+// Mutation commit in a component:
+store.commit('increment', 10)
+```
+
+```js
+// Declaration in the store:
+mutations: {
+  increment (state, payload) {
+    state.count += payload.amount
+  }
+}
+// Mutation commit in a component:
+store.commit('increment', {
+  amount: 10
+})
+```
+
+```js
+// Object-style mutation commit:
+store.commit({
+  type: 'increment',
+  amount: 10
+})
+```
+
+## mapMutations
+
+```js
+import { mapMutations } from 'vuex'
+
+export default {
+  // ...
+  methods: {
+    ...mapMutations([
+      'increment', // map `this.increment()` to `this.$store.commit('increment')`
+
+      // `mapMutations` also supports payloads:
+      'incrementBy' // map `this.incrementBy(amount)` to `this.$store.commit('incrementBy', amount)`
+    ]),
+    ...mapMutations({
+      add: 'increment' // map `this.add()` to `this.$store.commit('increment')`
+    })
+  }
+}
+```
+
+## Mutation cavieats and best-practices
+
+### Mutations follow Vue's reactivity rules
+
+* Since a Vuex store's state is made reactive by Vue, when we mutate the state, Vue components observing the state will update automatically. 
+* Vuex mutations are part of Vue reactivity system so they are subject to the same reactivity caveats when working with plain Vue:
+  * Prefer initializing your store's initial state with all desired fields upfront.
+  * When adding new properties to an Object, you should either
+    * Use `Vue.set(obj, 'newProp', 123)`, or
+    * Replace that Object with a fresh one. For example, using the object spread syntax (opens new window)we can write it like this: `state.obj = { ...state.obj, newProp: 123 }`
+
+### Use a constants' file (code-organization best practice tip)
+
+It is a commonly seen pattern to use constants for mutation types in various Flux implementations. This allows the code to take advantage of tooling like linters, and putting all constants in a single file allows your collaborators to get an at-a-glance view of what mutations are possible in the entire application:
+
+```js
+// mutation-types.js
+export const SOME_MUTATION = 'SOME_MUTATION'
+```
+
+```js
+// store.js
+import Vuex from 'vuex'
+import { SOME_MUTATION } from './mutation-types'
+
+const store = new Vuex.Store({
+  state: { ... },
+  mutations: {
+    // we can use the ES2015 computed property name feature
+    // to use a constant as the function name
+    [SOME_MUTATION] (state) {
+      // mutate state
+    }
+  }
+})
+```
+
 # APPLICATION STRUCTURE AND STORE FILE SPLITTING
 
 * As long as you follow the Vuex assumptions it's up to you how to structure your project. Anyway, rules of thumb are: 
