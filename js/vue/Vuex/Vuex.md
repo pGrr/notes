@@ -325,16 +325,17 @@ export default {
 }
 ```
 
-## Mutation cavieats and best-practices
+## Mutation caveats and best-practices
 
 ### Mutations follow Vue's reactivity rules
 
-* Since a Vuex store's state is made reactive by Vue, when we mutate the state, Vue components observing the state will update automatically. 
-* Vuex mutations are part of Vue reactivity system so they are subject to the same reactivity caveats when working with plain Vue:
-  * Prefer initializing your store's initial state with all desired fields upfront.
-  * When adding new properties to an Object, you should either
-    * Use `Vue.set(obj, 'newProp', 123)`, or
-    * Replace that Object with a fresh one. For example, using the object spread syntax (opens new window)we can write it like this: `state.obj = { ...state.obj, newProp: 123 }`
+* Since a Vuex store's state is made reactive by Vue:
+  * **when we mutate the state, Vue components observing the state will update automatically**. 
+  * mutations are subject to the same reactivity caveats when working with plain Vue:
+    * **Prefer initializing your store's initial state with all desired fields upfront**.
+    * When adding new properties to an Object, you should either
+      * **Use `Vue.set(obj, 'newProp', 123)`, or**
+      * **Replace that Object with a fresh one**. For example, using the object spread syntax (opens new window)we can write it like this: `state.obj = { ...state.obj, newProp: 123 }`
 
 ### Use a constants' file (code-organization best practice tip)
 
